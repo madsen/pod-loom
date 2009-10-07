@@ -32,7 +32,7 @@ sub collect_commands
 #---------------------------------------------------------------------
 sub sections
 {
-  (qw(NAME SYNOPSIS DESCRIPTION INTERFACE * DIAGNOSTICS),
+  (qw(NAME VERSION SYNOPSIS DESCRIPTION INTERFACE * DIAGNOSTICS),
    'CONFIGURATION AND ENVIRONMENT',
    qw(DEPENDENCIES INCOMPATIBILITIES),
    'BUGS AND LIMITATIONS',
@@ -47,12 +47,24 @@ sub section_NAME
   my ($module, $abstract) = $self->required_param($dataHash,
                                                   qw(module abstract));
 
-  return <<"END NAME";
-\=head1 NAME
-
-$module - $abstract
-END NAME
+  "=head1 NAME\n\n$module - $abstract\n";
 } # end section_NAME
+
+#---------------------------------------------------------------------
+sub section_VERSION
+{
+  my ($self, $dataHash) = @_;
+
+  if ($dataHash->{version_desc}) {
+    return "=head1 VERSION\n\n$dataHash->{version_desc}\n";
+  }
+
+  my $version = $dataHash->{version};
+
+  return "=head1 VERSION\n\nversion $version\n" if defined $version;
+
+  '';                           # Otherwise, omit VERSION
+} # end section_VERSION
 
 #---------------------------------------------------------------------
 sub section_CONFIGURATION_AND_ENVIRONMENT
