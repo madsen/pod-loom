@@ -24,9 +24,32 @@ use Moose;
 
 use Pod::Loom::Parser ();
 
+=head1 ATTRIBUTES
+
+All attributes beginning with C<tmp_> are reserved and must not be
+defined by subclasses.
+
+=attr tmp_collected
+
+This is a hashref of arrayrefs.  The keys are the POD commands
+returned by L</"collect_commands">, plus any format names that begin
+with C<Pod::Loom>.
+
+=attr tmp_filename
+
+This is the name of the file being processed.  This is only for
+informational purposes; it need not represent an actual file on disk.
+
+=cut
+
 has tmp_collected => (
   is       => 'rw',
   isa      => 'HashRef',
+);
+
+has tmp_filename => (
+  is       => 'rw',
+  isa      => 'Str',
 );
 
 #---------------------------------------------------------------------
@@ -47,7 +70,7 @@ our @EXPORT_OK = qw(%E);
 #---------------------------------------------------------------------
 # These methods are likely to be overloaded in subclasses:
 
-sub collect_commands { [] }
+sub collect_commands { [ 'head1' ] }
 sub override_section { 0 }
 #sub sections        { return } # A subclass must provide this
 
@@ -96,7 +119,9 @@ sub required_attr
 #---------------------------------------------------------------------
 sub weave
 {
-  my ($self, $podRef) = @_;
+  my ($self, $podRef, $filename) = @_;
+
+  $self->tmp_filename($filename);
 
   {
     my $pe = Pod::Loom::Parser->new( $self->collect_commands );

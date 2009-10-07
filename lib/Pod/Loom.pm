@@ -94,7 +94,7 @@ sub weave
 
   my $template = $templateClass->new($data);
 
-  my $newPod = $template->weave(\$sourcePod);
+  my $newPod = $template->weave(\$sourcePod, $filename);
   $newPod =~ s/\s*\z/\n/;       # ensure it ends with LF
 
   # Plug the new POD back into the code:
