@@ -32,6 +32,24 @@ sub override_section { 0 }
 #sub sections        { return } # A subclass must provide this
 
 #---------------------------------------------------------------------
+sub expect_sections
+{
+  my ($self, $dataList) = @_;
+
+  my @sections;
+
+  foreach my $block (@$dataList) {
+    if ($block =~ /^\s*sections\s+(\S.*)/s) {
+      push @sections, split '\n', $1;
+    }
+  } # end foreach $block
+
+  @sections = $self->sections unless @sections;
+
+  return @sections;
+} # end expect_sections
+
+#---------------------------------------------------------------------
 sub required_param
 {
   my $self     = shift;
@@ -54,7 +72,7 @@ sub weave
   };
 
   # Split out the expected sections:
-  my @expectSections = $self->sections;
+  my @expectSections = $self->expect_sections($collected->{'Pod::Loom'});
 
   my %expectedSection = map { $_ => 1 } @expectSections;
 
