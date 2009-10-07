@@ -23,6 +23,8 @@ use 5.008;
 use Moose;
 extends 'Pod::Loom::Template';
 
+use Pod::Loom::Template '%E';
+
 #=====================================================================
 sub collect_commands
 {
@@ -40,26 +42,31 @@ sub sections
 } # end sections
 
 #---------------------------------------------------------------------
+has qw(abstract is ro  isa Str);
+has qw(module   is ro  isa Str);
+
 sub section_NAME
 {
-  my ($self, $dataHash) = @_;
+  my ($self, $title) = @_;
 
-  my ($module, $abstract) = $self->required_param($dataHash,
-                                                  qw(module abstract));
+  my ($module, $abstract) = $self->required_attr($title, qw(module abstract));
 
   "=head1 NAME\n\n$module - $abstract\n";
 } # end section_NAME
 
 #---------------------------------------------------------------------
+has qw(version      is ro  isa Str);
+has qw(version_desc is ro  isa Str);
+
 sub section_VERSION
 {
-  my ($self, $dataHash) = @_;
+  my ($self) = @_;
 
-  if ($dataHash->{version_desc}) {
-    return "=head1 VERSION\n\n$dataHash->{version_desc}\n";
+  if ($self->version_desc) {
+    return "=head1 VERSION\n\n$E{$self->version_desc}\n";
   }
 
-  my $version = $dataHash->{version};
+  my $version = $self->version;
 
   return "=head1 VERSION\n\nversion $version\n" if defined $version;
 
@@ -93,9 +100,9 @@ sub override_section
 #---------------------------------------------------------------------
 sub joined_section
 {
-  my ($self, $cmd, $dataHash, $collected, $title, $pod) = @_;
+  my ($self, $cmd, $title, $pod) = @_;
 
-  my $entries = $collected->{$cmd};
+  my $entries = $self->tmp_collected->{$cmd};
 
   return ($pod || '') unless $entries and @$entries;
 
@@ -112,9 +119,9 @@ sub joined_section
 #---------------------------------------------------------------------
 sub section_CONFIGURATION_AND_ENVIRONMENT
 {
-  my ($self, $dataHash) = @_;
+  my ($self, $title) = @_;
 
-  my ($module) = $self->required_param($dataHash, 'module');
+  my ($module) = $self->required_attr($title, 'module');
 
   return <<"END CONFIGURATION";
 \=head1 CONFIGURATION AND ENVIRONMENT
@@ -136,12 +143,14 @@ sub section_BUGS_AND_LIMITATIONS
 } # end section_BUGS_AND_LIMITATIONS
 
 #---------------------------------------------------------------------
+has qw(dist    is ro  isa Str);
+has qw(authors is ro  isa ArrayRef[Str]);
+
 sub section_AUTHOR
 {
-  my ($self, $dataHash) = @_;
+  my ($self, $title) = @_;
 
-  my ($dist, $authors) = $self->required_param($dataHash,
-                                               qw(dist authors));
+  my ($dist, $authors) = $self->required_attr($title, qw(dist authors));
 
   my $pod = "=head1 AUTHOR\n\n";
 
@@ -165,11 +174,13 @@ END AUTHOR
 } # end section_AUTHOR
 
 #---------------------------------------------------------------------
+has qw(license_notice is ro  isa Str);
+
 sub section_LICENSE_AND_COPYRIGHT
 {
-  my ($self, $dataHash) = @_;
+  my ($self, $title) = @_;
 
-  my ($notice) = $self->required_param($dataHash, 'license_notice');
+  my ($notice) = $self->required_attr($title, 'license_notice');
 
   #FIXME other license
   "=head1 LICENSE AND COPYRIGHT\n\n$notice";
@@ -207,4 +218,6 @@ END DISCLAIMER
 #=====================================================================
 # Package Return Value:
 
+no Moose;
+__PACKAGE__->meta->make_immutable;
 1;

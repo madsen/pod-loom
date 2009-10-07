@@ -24,6 +24,26 @@ use Moose;
 
 use Pod::Loom::Parser ();
 
+has tmp_collected => (
+  is       => 'rw',
+  isa      => 'HashRef',
+);
+
+#---------------------------------------------------------------------
+# Tied hashes for interpolating function calls into strings:
+
+{ package Pod::Loom::_Interpolation;
+
+  sub TIEHASH { bless $_[1], $_[0] }
+  sub FETCH   { $_[0]->($_[1]) }
+} # end Pod::Loom::_Interpolation
+
+our %E;
+tie %E, 'Pod::Loom::_Interpolation', sub { $_[0] }; # eval
+
+use Exporter 'import';
+our @EXPORT_OK = qw(%E);
+
 #---------------------------------------------------------------------
 # These methods are likely to be overloaded in subclasses:
 
@@ -34,7 +54,9 @@ sub override_section { 0 }
 #---------------------------------------------------------------------
 sub expect_sections
 {
-  my ($self, $dataList) = @_;
+  my ($self) = @_;
+
+  my $dataList = $self->tmp_collected->{'Pod::Loom'};
 
   my @sections;
 
@@ -58,33 +80,36 @@ sub expect_sections
 } # end expect_sections
 
 #---------------------------------------------------------------------
-sub required_param
+sub required_attr
 {
   my $self     = shift;
-  my $dataHash = shift;
+  my $section  = shift;
 
-  map { my $v = $dataHash->{$_};
-        defined $v ? $v : die "Required parameter $_ was not found"
-      } @_;
-} # end required_param
+  map {
+    my $v = $self->$_;
+    defined $v
+        ? $v
+        : die "The $section section requires you to set `$_'\n"
+  } @_;
+} # end required_attr
 
 #---------------------------------------------------------------------
 sub weave
 {
-  my ($self, $podRef, $dataHash) = @_;
+  my ($self, $podRef) = @_;
 
-  my $collected = do {
+  {
     my $pe = Pod::Loom::Parser->new( $self->collect_commands );
     $pe->read_string($$podRef);
-    $pe->collected;
-  };
+    $self->tmp_collected( $pe->collected );
+  }
 
   # Split out the expected sections:
-  my @expectSections = $self->expect_sections($collected->{'Pod::Loom'});
+  my @expectSections = $self->expect_sections;
 
   my %expectedSection = map { $_ => 1 } @expectSections;
 
-  my $heads = $collected->{head1};
+  my $heads = $self->tmp_collected->{head1};
   my %section;
 
   foreach my $h (@$heads) {
@@ -110,7 +135,7 @@ sub weave
 
     my $method = $self->method_for_section($title);
 
-    $pod .= $self->$method($dataHash, $collected, $title, $section{$title})
+    $pod .= $self->$method($title, $section{$title})
         if $method;
 
     $pod =~ s/\n*\z/\n\n/ if $pod;
@@ -136,5 +161,7 @@ sub method_for_section
 #=====================================================================
 # Package Return Value:
 
+no Moose;
+__PACKAGE__->meta->make_immutable;
 1;
 

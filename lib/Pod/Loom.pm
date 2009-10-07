@@ -64,7 +64,7 @@ has template => (
 #=====================================================================
 sub weave
 {
-  my ($self, $docRef, $filename, $dataHash) = @_;
+  my ($self, $docRef, $filename, $data) = @_;
 
   my $ppi = PPI::Document->new($docRef);
 
@@ -92,9 +92,9 @@ sub weave
       unless $templateClass =~ /^[:_A-Z0-9]+$/i;
   eval "require $templateClass;" or croak "Unable to load $templateClass: $@";
 
-  my $template = $templateClass->new;
+  my $template = $templateClass->new($data);
 
-  my $newPod = $template->weave(\$sourcePod, $dataHash);
+  my $newPod = $template->weave(\$sourcePod);
   $newPod =~ s/\s*\z/\n/;       # ensure it ends with LF
 
   # Plug the new POD back into the code:
@@ -137,6 +137,8 @@ sub _has_pod_events
 #=====================================================================
 # Package Return Value:
 
+no Moose;
+__PACKAGE__->meta->make_immutable;
 1;
 
 __END__
