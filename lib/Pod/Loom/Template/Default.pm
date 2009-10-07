@@ -32,7 +32,7 @@ sub collect_commands
 #---------------------------------------------------------------------
 sub sections
 {
-  (qw(NAME VERSION SYNOPSIS DESCRIPTION INTERFACE * DIAGNOSTICS),
+  (qw(NAME VERSION SYNOPSIS DESCRIPTION ATTRIBUTES METHODS * DIAGNOSTICS),
    'CONFIGURATION AND ENVIRONMENT',
    qw(DEPENDENCIES INCOMPATIBILITIES),
    'BUGS AND LIMITATIONS',
@@ -65,6 +65,49 @@ sub section_VERSION
 
   '';                           # Otherwise, omit VERSION
 } # end section_VERSION
+
+#---------------------------------------------------------------------
+sub section_ATTRIBUTES
+{
+  my $self = shift;
+
+  $self->joined_section(attr => @_);
+} # end section_ATTRIBUTES
+
+#---------------------------------------------------------------------
+sub section_METHODS
+{
+  my $self = shift;
+
+  $self->joined_section(method => @_);
+} # end section_METHODS
+
+#---------------------------------------------------------------------
+sub override_section
+{
+  my ($self, $title) = @_;
+
+  return ($title eq 'ATTRIBUTES' or $title eq 'METHODS');
+} # end override_section
+
+#---------------------------------------------------------------------
+sub joined_section
+{
+  my ($self, $cmd, $dataHash, $collected, $title, $pod) = @_;
+
+  my $entries = $collected->{$cmd};
+
+  return ($pod || '') unless $entries and @$entries;
+
+  $pod = "=head1 $title\n" unless $pod;
+
+  foreach (@$entries) {
+    s/^=\w+/=head2/ or die "Bad entry $_";
+    $pod .= "\n$_";
+  } # end foreach
+
+  return $pod;
+} # end joined_section
 
 #---------------------------------------------------------------------
 sub section_CONFIGURATION_AND_ENVIRONMENT
