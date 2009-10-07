@@ -47,19 +47,41 @@ sub handle_event
   my $dest = $self->{dest};
 
   if ($event->{type} eq 'command') {
-    # See if this changes the output location:
-    my $collector = $self->{collect}{ $event->{command} };
+    my $cmd = $event->{command};
+    return if $cmd eq 'cut';
 
+    # See if this changes the output location:
+    my $collector = $self->{collect}{ $cmd };
+
+    # Special handling for Pod::Loom sections:
+    if ($cmd =~ /^(begin|for)$/ and
+        $event->{content} =~ s/^\s*(Pod::Loom\S*)\s*//) {
+      $collector = ($self->{collect}{$1} ||= []);
+      if ($cmd eq 'for') {
+        push @$collector, $event->{content};
+        return;
+      }
+      undef $cmd;
+    } elsif ($cmd eq 'end' and
+             $event->{content} =~ /^\s*Pod::Loom/) {
+      # Handle =end Pod::Loom:
+      $self->{dest} = undef;
+      return;
+    }
+
+    # Either set output location, or make sure we have one:
     if ($collector) {
       push @$collector, '';
       $dest = $self->{dest} = \$collector->[-1];
     } else {
-      die "=$event->{command} used too soon\n" unless $dest;
+      die "=$cmd used too soon\n" unless $dest;
     }
 
-    $$dest .= "=$event->{command}";
-    $$dest .= ' ' unless $event->{content} =~ /^\n/;
-  }
+    if ($cmd) {
+      $$dest .= "=$cmd";
+      $$dest .= ' ' unless $event->{content} =~ /^\n/;
+    }
+  } # end if command event
 
   $$dest .= $event->{content};
 } # end handle_event
@@ -84,7 +106,3 @@ sub collected { shift->{collect} }
 1;
 
 __END__
-
-# Local Variables:
-# tmtrack-file-task: "::Parser.pm"
-# End:
