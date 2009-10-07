@@ -17,17 +17,122 @@ package Pod::Loom;
 # ABSTRACT: Weave pseudo-POD into real POD
 #---------------------------------------------------------------------
 
+our $VERSION = '0.01';
+
 use 5.008;
 use Moose;
-use Carp;
+use Carp qw(croak);
+use PPI ();
+use String::RewritePrefix ();
 
 #=====================================================================
-# Package Global Variables:
+{
+  package Pod::Loom::_EventCounter;
+  our @ISA = 'Pod::Eventual';
+  sub new {
+    require Pod::Eventual;
+    my $events = 0;
+    bless \$events => shift;
+  }
 
-our $VERSION = '0.01';
+  sub handle_event { ++${$_[0]} }
+  sub events { ${ +shift } }
+}
 
 #=====================================================================
 # Package Pod::Loom:
+
+{
+  package Pod::Loom::_Logger;
+  sub log { printf "%s\n", String::Flogger->flog($_[1]) }
+  sub new { bless {} => shift }
+}
+
+has logger => (
+  is      => 'ro',
+  lazy    => 1,
+  default => sub { Pod::Loom::_Logger->new },
+  handles => [ qw(log) ]
+);
+
+has template => (
+  is      => 'rw',
+  isa     => 'Str',
+  default => 'Default',
+);
+
+#=====================================================================
+sub weave
+{
+  my ($self, $docRef, $filename, $dataHash) = @_;
+
+  my $ppi = PPI::Document->new($docRef);
+
+  my $sourcePod = join("\n", @{ $ppi->find('PPI::Token::Pod') || [] });
+
+  $ppi->prune('PPI::Token::Pod');
+
+  croak "can't use Pod::Loom on $filename: there is POD inside string literals"
+      if $self->_has_pod_events("$ppi");
+
+  # Determine the template to use:
+  my $templateClass = $self->template;
+
+  if ($sourcePod =~ /^=for \s+ Pod::Loom \s+ template \s+ (\S+)/mx) {
+    $templateClass = $1;
+  }
+
+  $templateClass = String::RewritePrefix->rewrite(
+    {'=' => q{},  q{} => 'Pod::Loom::Template::'},
+    $templateClass
+  );
+
+  # Instantiate the template and let it weave the new POD:
+  die "Invalid class name $templateClass"
+      unless $templateClass =~ /^[:_A-Z0-9]+$/i;
+  eval "require $templateClass;" or croak "Unable to load $templateClass: $@";
+
+  my $template = $templateClass->new;
+
+  my $newPod = $template->weave(\$sourcePod, $dataHash);
+  $newPod =~ s/\s*\z/\n/;       # ensure it ends with LF
+
+  # Plug the new POD back into the code:
+
+  my $end = do {
+    my $end_elem = $ppi->find('PPI::Statement::Data');
+
+    unless ($end_elem) {
+      $end_elem = $ppi->find('PPI::Statement::End');
+
+      if (not $end_elem or (@$end_elem == 1 and
+                            $end_elem->[0] =~ /^__END__\s*\z/)) {
+        $end_elem = [];
+      }
+    } # end unless found __DATA__
+
+    @$end_elem ? join q{}, @$end_elem : undef;
+  };
+
+  $ppi->prune('PPI::Statement::End');
+  $ppi->prune('PPI::Statement::Data');
+
+  my $docstr = $ppi->serialize;
+  $docstr =~ s/\n*\z/\n/;       # ensure it ends with one LF
+
+  return defined $end
+      ? "$docstr\n$newPod\n=cut\n\n$end"
+      : "$docstr\n__END__\n\n$newPod";
+} # end weave_document
+
+#---------------------------------------------------------------------
+sub _has_pod_events
+{
+  my $pe = Pod::Loom::_EventCounter->new;
+  $pe->read_string($_[1]);
+
+  $pe->events;
+} # end _has_pod_events
 
 #=====================================================================
 # Package Return Value:
