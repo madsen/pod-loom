@@ -38,7 +38,7 @@ sub sections
    'CONFIGURATION AND ENVIRONMENT',
    qw(DEPENDENCIES INCOMPATIBILITIES),
    'BUGS AND LIMITATIONS',
-   'AUTHOR', 'LICENSE AND COPYRIGHT', 'DISCLAIMER OF WARRANTY');
+   'AUTHOR', 'COPYRIGHT AND LICENSE', 'DISCLAIMER OF WARRANTY');
 } # end sections
 
 #---------------------------------------------------------------------
@@ -176,15 +176,15 @@ END AUTHOR
 #---------------------------------------------------------------------
 has qw(license_notice is ro  isa Str);
 
-sub section_LICENSE_AND_COPYRIGHT
+sub section_COPYRIGHT_AND_LICENSE
 {
   my ($self, $title) = @_;
 
   my ($notice) = $self->required_attr($title, 'license_notice');
 
   #FIXME other license
-  "=head1 LICENSE AND COPYRIGHT\n\n$notice";
-} # end section_LICENSE_AND_COPYRIGHT
+  "=head1 COPYRIGHT AND LICENSE\n\n$notice";
+} # end section_COPYRIGHT_AND_LICENSE
 
 #---------------------------------------------------------------------
 sub section_DISCLAIMER_OF_WARRANTY
