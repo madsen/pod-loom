@@ -46,7 +46,15 @@ sub expect_sections
 
   @sections = $self->sections unless @sections;
 
-  return @sections;
+  my %omit;
+
+  foreach my $block (@$dataList) {
+    if ($block =~ /^\s*omit\s+(\S.*)/s) {
+      $omit{$_} = 1 for split '\n', $1;
+    }
+  } # end foreach $block
+
+  return grep { not $omit{$_} } @sections;
 } # end expect_sections
 
 #---------------------------------------------------------------------
