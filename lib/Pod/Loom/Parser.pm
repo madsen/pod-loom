@@ -55,7 +55,7 @@ sub handle_event
 
     # Special handling for Pod::Loom sections:
     if ($cmd =~ /^(begin|for)$/ and
-        $event->{content} =~ s/^\s*(Pod::Loom\S*)\s*//) {
+        $event->{content} =~ s/^\s*(Pod::Loom\b\S*)\s*//) {
       $collector = ($self->{collect}{$1} ||= []);
       if ($cmd eq 'for') {
         push @$collector, $event->{content};
@@ -63,7 +63,7 @@ sub handle_event
       }
       undef $cmd;
     } elsif ($cmd eq 'end' and
-             $event->{content} =~ /^\s*Pod::Loom/) {
+             $event->{content} =~ /^\s*Pod::Loom\b/) {
       # Handle =end Pod::Loom:
       $self->{dest} = undef;
       return;

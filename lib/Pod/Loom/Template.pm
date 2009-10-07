@@ -79,24 +79,20 @@ sub expect_sections
 {
   my ($self) = @_;
 
-  my $dataList = $self->tmp_collected->{'Pod::Loom'};
+  my $collected = $self->tmp_collected;
 
   my @sections;
 
-  foreach my $block (@$dataList) {
-    if ($block =~ /^\s*sections\s+(\S.*)/s) {
-      push @sections, split '\n', $1;
-    }
+  foreach my $block (@{ $collected->{'Pod::Loom-sections'} || [] }) {
+    push @sections, split '\n', $block;
   } # end foreach $block
 
   @sections = $self->sections unless @sections;
 
   my %omit;
 
-  foreach my $block (@$dataList) {
-    if ($block =~ /^\s*omit\s+(\S.*)/s) {
-      $omit{$_} = 1 for split '\n', $1;
-    }
+  foreach my $block (@{ $collected->{'Pod::Loom-omit'} || [] }) {
+    $omit{$_} = 1 for split '\n', $block;
   } # end foreach $block
 
   return grep { not $omit{$_} } @sections;

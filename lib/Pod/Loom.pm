@@ -78,7 +78,7 @@ sub weave
   # Determine the template to use:
   my $templateClass = $self->template;
 
-  if ($sourcePod =~ /^=for \s+ Pod::Loom \s+ template \s+ (\S+)/mx) {
+  if ($sourcePod =~ /^=for \s+ Pod::Loom-template \s+ (\S+)/mx) {
     $templateClass = $1;
   }
 
