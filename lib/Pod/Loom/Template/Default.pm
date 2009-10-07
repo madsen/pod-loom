@@ -51,7 +51,7 @@ sub section_NAME
 
   my ($module, $abstract) = $self->required_attr($title, qw(module abstract));
 
-  "=head1 NAME\n\n$module - $abstract\n";
+  "=head1 $title\n\n$module - $abstract\n";
 } # end section_NAME
 
 #---------------------------------------------------------------------
@@ -60,15 +60,15 @@ has qw(version_desc is ro  isa Str);
 
 sub section_VERSION
 {
-  my ($self) = @_;
+  my ($self, $title) = @_;
 
   if ($self->version_desc) {
-    return "=head1 VERSION\n\n$E{$self->version_desc}\n";
+    return "=head1 $title\n\n$E{$self->version_desc}\n";
   }
 
   my $version = $self->version;
 
-  return "=head1 VERSION\n\nversion $version\n" if defined $version;
+  return "=head1 $title\n\nversion $version\n" if defined $version;
 
   '';                           # Otherwise, omit VERSION
 } # end section_VERSION
@@ -124,7 +124,7 @@ sub section_CONFIGURATION_AND_ENVIRONMENT
   my ($module) = $self->required_attr($title, 'module');
 
   return <<"END CONFIGURATION";
-\=head1 CONFIGURATION AND ENVIRONMENT
+\=head1 $title
 
 $module requires no configuration files or environment variables.
 END CONFIGURATION
@@ -133,13 +133,17 @@ END CONFIGURATION
 #---------------------------------------------------------------------
 sub section_INCOMPATIBILITIES
 {
-  "=head1 INCOMPATIBILITIES\n\nNone reported.\n";
+  my ($self, $title) = @_;
+
+  "=head1 $title\n\nNone reported.\n";
 } # end section_INCOMPATIBILITIES
 
 #---------------------------------------------------------------------
 sub section_BUGS_AND_LIMITATIONS
 {
-  "=head1 BUGS AND LIMITATIONS\n\nNo bugs have been reported.\n";
+  my ($self, $title) = @_;
+
+  "=head1 $title\n\nNo bugs have been reported.\n";
 } # end section_BUGS_AND_LIMITATIONS
 
 #---------------------------------------------------------------------
@@ -152,7 +156,7 @@ sub section_AUTHOR
 
   my ($dist, $authors) = $self->required_attr($title, qw(dist authors));
 
-  my $pod = "=head1 AUTHOR\n\n";
+  my $pod = "=head1 $title\n\n";
 
   foreach my $authorCredit (@$authors) {
     if ($authorCredit =~ /(.*\S)\s*(<.*>)$/) {
@@ -183,14 +187,16 @@ sub section_COPYRIGHT_AND_LICENSE
   my ($notice) = $self->required_attr($title, 'license_notice');
 
   #FIXME other license
-  "=head1 COPYRIGHT AND LICENSE\n\n$notice";
+  "=head1 $title\n\n$notice";
 } # end section_COPYRIGHT_AND_LICENSE
 
 #---------------------------------------------------------------------
 sub section_DISCLAIMER_OF_WARRANTY
 {
+  my ($self, $title) = @_;
+
   return <<"END DISCLAIMER";
-\=head1 DISCLAIMER OF WARRANTY
+\=head1 $title
 
 BECAUSE THIS SOFTWARE IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
 FOR THE SOFTWARE, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN
