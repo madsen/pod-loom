@@ -23,13 +23,33 @@ use 5.008;
 use strict;
 use warnings;
 
-#=====================================================================
+=for Pod::Loom-sort_method
+new
+
+=method new
+
+  $template = Pod::Loom::Template::Identity->new($data);
+
+A template must have a constructor named C<new> that takes one argument.
+(In this case, we discard it.)
+
+=cut
+
 sub new
 {
   bless {}, shift;
 } # end new
-
 #---------------------------------------------------------------------
+
+=method weave
+
+  $new_pod = $template->weave(\$old_pod, $filename);
+
+A template must also have a C<weave> method that returns the new POD.
+The Identity template simply returns the POD unchanged.
+
+=cut
+
 sub weave
 {
   my ($self, $podRef, $filename) = @_;
