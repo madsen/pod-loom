@@ -136,6 +136,14 @@ there will not appear in the final document.  (Unless they appeared in
 the document, in which case they will be with the other C<*>
 sections.)
 
+If the document contains C<=for Pod::Loom-insert_before>, the sections
+listed there will be inserted before the last section in the list
+(which must already be in the section list).  If the sections were
+already in the list, they are moved to the new location.
+
+If the document contains C<=for Pod::Loom-insert_after>, the sections
+listed there will be inserted after the first section in the list.
+
 =cut
 
 sub expect_sections
@@ -152,6 +160,9 @@ sub expect_sections
 
   @sections = @{ $self->sections } unless @sections;
 
+  $self->_insert_sections(\@sections, before => -1);
+  $self->_insert_sections(\@sections, after  =>  0);
+
   my %omit;
 
   foreach my $block (@{ $collected->{'Pod::Loom-omit'} || [] }) {
@@ -160,6 +171,44 @@ sub expect_sections
 
   return grep { not $omit{$_} } @sections;
 } # end expect_sections
+
+#---------------------------------------------------------------------
+# Insert sections before or after other sections:
+
+sub _insert_sections
+{
+  my ($self, $sectionsList, $type, $index) = @_;
+
+  my $blocks = $self->tmp_collected->{"Pod::Loom-insert_$type"}
+      or return;
+
+  my @empty;
+
+  foreach my $block (@$blocks) {
+    my @list = split /\s*\n/, $block;
+
+    next unless @list;
+
+    die "Can't insert $type nonexistent section $list[$index]"
+        unless grep { $_ eq $list[$index] } @$sectionsList;
+
+=diag C<< Can't insert before/after nonexistent section %s >>
+
+(F) You can't insert sections near a section title that isn't already in
+the list of sections.  Make sure you spelled it right.
+
+=cut
+
+    # We remove each section listed:
+    my %remap = map { $_ => \@empty } @list;
+
+    # Except the one at $index, where we insert the entire list:
+    $remap{ $list[$index] } = \@list;
+
+    @$sectionsList = map { $remap{$_} ? @{$remap{$_}} : $_ } @$sectionsList;
+  } # end foreach $block
+
+} # end _insert_sections
 #---------------------------------------------------------------------
 
 =method required_attr
@@ -266,6 +315,11 @@ sub _find_sort_order
 This is the primary entry point, normally called by Pod::Loom's
 C<weave> method.  It splits the POD as defined by C<collect_commands>,
 then reassembles it.
+
+=diag C<< Can't find heading in %s >>
+
+(F) Pod::Loom couldn't determine the section title for the specified
+section.  Is it formatted properly?
 
 =cut
 
