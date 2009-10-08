@@ -170,6 +170,15 @@ __PACKAGE__->meta->make_immutable;
 
 __END__
 
+=for Pod::Loom-insert_before
+WARNING
+SYNOPSIS
+
+=head1 WARNING
+
+This code is still in flux.  Use it at your own risk, and be prepared
+to adapt to changes.
+
 =head1 SYNOPSIS
 
   use Pod::Loom;
