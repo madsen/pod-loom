@@ -27,11 +27,12 @@ use Pod::Loom::Template '%E';
 
 #=====================================================================
 has qw(sort_attr   is ro), isa => 'Int | ArrayRef[Str]';
+has qw(sort_diag   is ro), isa => 'Int | ArrayRef[Str]';
 has qw(sort_method is ro), isa => 'Int | ArrayRef[Str]';
 
 sub collect_commands
 {
-  [ qw(head1 method attr) ];
+  [ qw(head1 attr method diag) ];
 } # end collect_commands
 
 #---------------------------------------------------------------------
@@ -97,7 +98,9 @@ sub override_section
 {
   my ($self, $title) = @_;
 
-  return ($title eq 'ATTRIBUTES' or $title eq 'METHODS');
+  return ($title eq 'ATTRIBUTES' or
+          $title eq 'DIAGNOSTICS' or
+          $title eq 'METHODS');
 } # end override_section
 
 #---------------------------------------------------------------------
@@ -117,6 +120,27 @@ sub joined_section
   } # end foreach
 
   return $pod;
+} # end joined_section
+
+#---------------------------------------------------------------------
+sub section_DIAGNOSTICS
+{
+  my ($self, $title, $pod) = @_;
+
+  my $entries = $self->tmp_collected->{diag};
+
+  return ($pod || '') unless $entries and @$entries;
+
+  $pod = "=head1 $title\n" unless $pod;
+
+  $pod .= "\n=over\n";
+
+  foreach (@$entries) {
+    s/^=\w+/=item/ or die "Bad entry $_";
+    $pod .= "\n$_";
+  } # end foreach
+
+  return $pod . "\n=back\n";
 } # end joined_section
 
 #---------------------------------------------------------------------
