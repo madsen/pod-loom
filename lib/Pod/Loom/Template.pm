@@ -91,7 +91,8 @@ Normally, if a section appears in the document, it remains unchanged
 by the template.  However, a template may want to rewrite certain
 sections.  C<override_section> is called when the specified section is
 present in the document.  If it returnes true, then the normal
-C<section_TITLE> method will be called.
+C<section_TITLE> method will be called.  (If it returns true but the
+C<section_TITLE> method doesn't exist, the section will be dropped.)
 
 =attr sections
 
@@ -258,7 +259,7 @@ sub _find_sort_order
 
 =method weave
 
-  $new_pod = $tmp->weave($podRef, $filename);
+  $new_pod = $tmp->weave(\$old_pod, $filename);
 
 This is the primary entry point, normally called by Pod::Loom's
 C<weave> method.  It splits the POD as defined by C<collect_commands>,
@@ -306,13 +307,13 @@ sub weave
   foreach my $title (@expectSections) {
     if ($section{$title} and not $self->override_section($title)) {
       $pod .= $section{$title};
-      next;
     } # end if document supplied section and we don't override it
+    else {
+      my $method = $self->method_for_section($title);
 
-    my $method = $self->method_for_section($title);
-
-    $pod .= $self->$method($title, $section{$title})
-        if $method;
+      $pod .= $self->$method($title, $section{$title})
+          if $method;
+    } # end else let method generate section
 
     $pod =~ s/\n*\z/\n\n/ if $pod;
   } # end foreach $title in @expectSections
