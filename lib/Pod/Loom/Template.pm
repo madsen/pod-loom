@@ -93,15 +93,13 @@ sections.  C<override_section> is called when the specified section is
 present in the document.  If it returnes true, then the normal
 C<section_TITLE> method will be called.
 
-=method sections
+=attr sections
 
-  @section_titles = $tmp->sections;
-
-This method must be overriden in subclasses.  It returns a list of
-section titles in the order they should appear.  The special title
-C<*> indicates where sections that appear in the document but are not
-in this list will be placed.  (If C<*> is not in this list, such
-sections will be dropped.)
+Subclasses must provide a default value for this attribute.  It is an
+arrayref of section titles in the order they should appear.  The
+special title C<*> indicates where sections that appear in the
+document but are not in this list will be placed.  (If C<*> is not in
+this list, such sections will be dropped.)
 
 The list can include sections that the template does not provide.  In
 that case, it simply indicates where the section should be placed if
@@ -111,7 +109,13 @@ the document provides it.
 
 sub collect_commands { [ 'head1' ] }
 sub override_section { 0 }
-#sub sections        { return } # A subclass must provide this
+
+has sections => (
+  is       => 'ro',
+  isa      => 'ArrayRef[Str]',
+  required => 1,
+);
+
 #---------------------------------------------------------------------
 
 =method expect_sections
@@ -145,7 +149,7 @@ sub expect_sections
     push @sections, split /\s*\n/, $block;
   } # end foreach $block
 
-  @sections = $self->sections unless @sections;
+  @sections = @{ $self->sections } unless @sections;
 
   my %omit;
 

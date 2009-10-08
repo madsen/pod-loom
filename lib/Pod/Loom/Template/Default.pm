@@ -36,14 +36,14 @@ sub collect_commands
 } # end collect_commands
 
 #---------------------------------------------------------------------
-sub sections
-{
+our @sections =
   (qw(NAME VERSION SYNOPSIS DESCRIPTION ATTRIBUTES METHODS * DIAGNOSTICS),
    'CONFIGURATION AND ENVIRONMENT',
    qw(DEPENDENCIES INCOMPATIBILITIES),
    'BUGS AND LIMITATIONS',
    'AUTHOR', 'COPYRIGHT AND LICENSE', 'DISCLAIMER OF WARRANTY');
-} # end sections
+
+has qw(+sections default) => sub { \@sections };
 
 #---------------------------------------------------------------------
 has qw(abstract is ro  isa Str);
