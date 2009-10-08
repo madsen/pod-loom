@@ -139,10 +139,17 @@ sections.)
 If the document contains C<=for Pod::Loom-insert_before>, the sections
 listed there will be inserted before the last section in the list
 (which must already be in the section list).  If the sections were
-already in the list, they are moved to the new location.
+already in the section list, they are moved to the new location.
 
 If the document contains C<=for Pod::Loom-insert_after>, the sections
 listed there will be inserted after the first section in the list.
+For example,
+
+  =for Pod::Loom-insert_after
+  DESCRIPTION
+  NOTES
+
+will cause the NOTES section to appear immediately after the DESCRIPTION.
 
 =cut
 
@@ -409,6 +416,72 @@ sub method_for_section
 no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
+
+=head1 DESCRIPTION
+
+Pod::Loom::Template is intended as the standard base class for
+Pod::Loom templates.  It provides the engine that splits apart the POD
+and reassembles it.  The subclass needs to specify how the POD is
+reassembled.
+
+=head2 Controlling the template
+
+A POD document can contain special commands for the template.  These
+commands should work with all templates based on Pod::Loom::Template.
+They are placed in a C<=for> command, and must not come in the middle
+of a section.
+
+=over
+
+=item Pod::Loom-insert_after
+
+=item Pod::Loom-insert_before
+
+Insert (or move) one or more sections into the specified position.
+See L</"expect_sections">.
+
+=item Pod::Loom-omit
+
+Omit the specified sections from the document.
+See L</"expect_sections">.
+
+=item Pod::Loom-sections
+
+Specify the complete list of sections for the document.
+See L</"expect_sections">.
+
+=item Pod::Loom-sort_COMMAND
+
+If a template allows pseudo-POD commands like C<=method>, you can have
+the resulting entries sorted alphabetically.  For example, to have
+your methods sorted, use
+
+  =for Pod::Loom-sort_method
+
+You can also supply a list of entries (one per line) that should come
+first.  The list must match the corresponding entry exactly.  For
+example:
+
+  =for Pod::Loom-sort_method
+  new
+
+  =method new
+
+or
+
+  =for Pod::Loom-sort_method
+  C<< $object = Class->new() >>
+
+  =method C<< $object = Class->new() >>
+
+=item Pod::Loom-template
+
+Specify the template for the document.  (This is actually handled by
+L<Pod::Loom>, and applies to all templates, whether or not they
+subclass Pod::Loom::Template.)
+
+=back
+
 
 =head1 DIAGNOSTICS
 
