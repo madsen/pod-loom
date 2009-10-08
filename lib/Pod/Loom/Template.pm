@@ -84,7 +84,7 @@ sub expect_sections
   my @sections;
 
   foreach my $block (@{ $collected->{'Pod::Loom-sections'} || [] }) {
-    push @sections, split '\n', $block;
+    push @sections, split /\s*\n/, $block;
   } # end foreach $block
 
   @sections = $self->sections unless @sections;
@@ -92,13 +92,28 @@ sub expect_sections
   my %omit;
 
   foreach my $block (@{ $collected->{'Pod::Loom-omit'} || [] }) {
-    $omit{$_} = 1 for split '\n', $block;
+    $omit{$_} = 1 for split /\s*\n/, $block;
   } # end foreach $block
 
   return grep { not $omit{$_} } @sections;
 } # end expect_sections
-
 #---------------------------------------------------------------------
+
+=method required_attr
+
+  my @values = $tmp->required_attr($section_title, @attributeNames);
+
+Returns the value of each attribute specified in C<@attributeNames>.
+If any attribute is C<undef>, dies with a message that
+C<$section_title> requires that attribute.
+
+=diag C<< The %s section requires you to set `%s' >>
+
+(F) The specified section of the template requires an attribute that
+you did not set.
+
+=cut
+
 sub required_attr
 {
   my $self     = shift;
@@ -113,6 +128,72 @@ sub required_attr
 } # end required_attr
 
 #---------------------------------------------------------------------
+# Sort each arrayref in tmp_collected (if appropriate):
+
+sub _sort_collected
+{
+  my $self = shift;
+
+  my $collected = $self->tmp_collected;
+
+  foreach my $type (@{ $self->collect_commands }) {
+    # Is this type of entry sorted at all?
+    my $sort = $self->_find_sort_order($type) or next;
+
+    # Begin Schwartzian transform (entry_name => entry):
+    my @sortable = map { /^=\w+ \s+ (\S (?:.*\S)? )/x
+                             ? [ $1 => $_ ]
+                             : [ '' => $_ ] # Should this even be allowed?
+                       } @{ $collected->{$type} };
+
+    # Set up %special to handle any top-of-the-list entries:
+    my $count = 1;
+    my %special;
+    %special = map { $_ => $count++ } @$sort if ref $sort;
+
+    # Sort specials first, then the rest ASCIIbetically:
+    my @sorted =
+        map { $_->[1] }         # finish the Schwartzian transform
+        sort { ($special{$a->[0]} || $count) <=> ($special{$b->[0]} || $count)
+               or $a->[0] cmp $b->[0] }
+        @sortable;
+
+    $collected->{$type} = \@sorted;
+  } # end foreach $type of $collected entry
+} # end _sort_collected
+
+#---------------------------------------------------------------------
+# Determine whether a collected command should be sorted:
+#
+# Returns false if they should remain in document order
+# Returns true if they should be sorted
+#
+# If the return value is a reference, it is an arrayref of entry names
+# that should appear (in order) before any other entries.
+
+sub _find_sort_order
+{
+  my ($self, $type) = @_;
+
+  # First, see if the document specifies the sort order:
+  my $blocks = $self->tmp_collected->{"Pod::Loom-sort_$type"};
+
+  if ($blocks) {
+    my @sortFirst;
+    foreach my $block (@$blocks) {
+      push @sortFirst, split /\s*\n/, $block;
+    } # end foreach $block
+
+    return \@sortFirst;
+  } # end if document specifies sort order
+
+  # The document said nothing, so ask the template:
+  my $method = $self->can("sort_$type") or return;
+
+  $self->$method;
+} # end _find_sort_order
+
+#---------------------------------------------------------------------
 sub weave
 {
   my ($self, $podRef, $filename) = @_;
@@ -124,6 +205,8 @@ sub weave
     $pe->read_string($$podRef);
     $self->tmp_collected( $pe->collected );
   }
+
+  $self->_sort_collected;
 
   # Split out the expected sections:
   my @expectSections = $self->expect_sections;

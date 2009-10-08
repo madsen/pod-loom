@@ -26,6 +26,9 @@ extends 'Pod::Loom::Template';
 use Pod::Loom::Template '%E';
 
 #=====================================================================
+has qw(sort_attr   is ro), isa => 'Int | ArrayRef[Str]';
+has qw(sort_method is ro), isa => 'Int | ArrayRef[Str]';
+
 sub collect_commands
 {
   [ qw(head1 method attr) ];
