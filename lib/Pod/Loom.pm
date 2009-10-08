@@ -60,8 +60,27 @@ has template => (
   isa     => 'Str',
   default => 'Default',
 );
-
 #=====================================================================
+
+=method weave
+
+    $new_doc = $loom->weave(\$doc, $filename, $data);
+
+This method does all the work (see L</"DESCRIPTION">).  You pass it a
+reference to a string containing Perl code mixed with POD.  (This
+string is not modified.)  It returns a new string containing the
+reformatted POD moved to the end of the code.
+
+The C<$filename> is used for error messages.  It does not need to
+actually exist on disk.
+
+C<$data> is passed as the only argument to the template class's
+constructor (which must be named C<new>).  Pod::Loom does not inspect
+it, but for consistency and compatibility between templates it should
+be a hashref.
+
+=cut
+
 sub weave
 {
   my ($self, $docRef, $filename, $data) = @_;
@@ -72,8 +91,18 @@ sub weave
 
   $ppi->prune('PPI::Token::Pod');
 
-  croak "can't use Pod::Loom on $filename: there is POD inside string literals"
+  croak "Can't use Pod::Loom on $filename: there is POD inside string literals"
       if $self->_has_pod_events("$ppi");
+
+=diag C<< Can't use Pod::Loom on %s: there is POD inside string literals >>
+
+You have POD commands inside a string literal (probably a here doc).
+Since Pod::Loom moves all POD to the end of the file, running it on
+your program would change its behavior.  Move the POD outside the
+string, or quote any equals sign at the beginning of a line so it no
+longer looks like POD.
+
+=cut
 
   # Determine the template to use:
   my $templateClass = $self->template;
@@ -92,10 +121,20 @@ sub weave
       unless $templateClass =~ /^[:_A-Z0-9]+$/i;
   eval "require $templateClass;" or croak "Unable to load $templateClass: $@";
 
+=diag C<< Invalid class name %s >>
+
+A template name may only contain ASCII alphanumerics and underscore.
+
+=diag C<< Unable to load %s: %s >>
+
+Pod::Loom got an error when it tried to C<require> your template class.
+
+=cut
+
   my $template = $templateClass->new($data);
 
   my $newPod = $template->weave(\$sourcePod, $filename);
-  $newPod =~ s/\s*\z/\n/;       # ensure it ends with LF
+  $newPod =~ s/(?:\s*\n=cut)*\s*\z/\n\n=cut\n/; # ensure it ends with =cut
 
   # Plug the new POD back into the code:
 
@@ -105,10 +144,11 @@ sub weave
     unless ($end_elem) {
       $end_elem = $ppi->find('PPI::Statement::End');
 
+      # If there's nothing after __END__, we can put the POD there:
       if (not $end_elem or (@$end_elem == 1 and
                             $end_elem->[0] =~ /^__END__\s*\z/)) {
         $end_elem = [];
-      }
+      } # end if no significant text after __END__
     } # end unless found __DATA__
 
     @$end_elem ? join q{}, @$end_elem : undef;
@@ -121,7 +161,7 @@ sub weave
   $docstr =~ s/\n*\z/\n/;       # ensure it ends with one LF
 
   return defined $end
-      ? "$docstr\n$newPod\n=cut\n\n$end"
+      ? "$docstr\n$newPod\n$end"
       : "$docstr\n__END__\n\n$newPod";
 } # end weave_document
 
@@ -145,139 +185,67 @@ __END__
 
 =head1 SYNOPSIS
 
-    use Pod::Loom;
+  use Pod::Loom;
 
-=for author to fill in:
-    Brief code example(s) here showing commonest usage(s).
-    This section will be as far as many users bother reading
-    so make it as educational and exeplary as possible.
+  my $document = ...; # Text of Perl program including POD
+  my $filename = "filename/of/document.pm"; # For messages
+  my %data = ...; # Configuration required by template
 
+  my $loom = Pod::Loom->new(template => 'Custom');
+  my $new_doc = $loom->weave(\$document, $filename, \%data);
 
 =head1 DESCRIPTION
 
-=for author to fill in:
-    Write a full description of the module and its features here.
-    Use subsections (=head2, =head3) as appropriate.
+Pod::Loom extracts all the POD sections from Perl code, passes the POD
+to a template that may reformat it in various ways, and then returns a
+copy of the code with the reformatted POD at the end.
+
+A template may convert non-standard POD commands like C<=method> and
+C<=attr> into standard POD, reorder sections, and generally do
+whatever it likes to the POD.
+
+The document being reformatted can specify the template to use with a
+line like this:
+
+  =for Pod::Loom-template TEMPLATE_NAME
+
+Otherwise, you can specify the template in the Pod::Loom constructor:
+
+  $loom = Pod::Loom->new(template => TEMPLATE_NAME);
+
+TEMPLATE_NAME is automatically prefixed with C<Pod::Loom::Template::>
+to form a class name.  If you want to use a template outside that
+namespace, prefix the class name with C<=> to indicate that.
 
 
-=head1 INTERFACE
+=for Pod::Loom-sort_method
+new
 
-=for author to fill in:
-    Write a separate section listing the public components of the modules
-    interface. These normally consist of either subroutines that may be
-    exported, or methods that may be called on objects belonging to the
-    classes provided by the module.
+=method new
+
+  $loom = Pod::Loom->new(template => TEMPLATE_NAME);
+
+Constructs a new Pod::Loom.  The C<template> parameter is optional; it
+defaults to C<Default> (meaning L<Pod::Loom::Template::Default>).
+
+
+=head1 REQUIREMENTS OF A TEMPLATE CLASS
+
+A template class must have a constructor named C<new> and a method
+named C<weave> that matches the one in L<Pod::Loom::Template>.  It
+should be in the C<Pod::Loom::Template::> namespace (to make it easy
+to specify the template name), but it does not need to be a subclass
+of Pod::Loom::Template.
 
 
 =head1 DIAGNOSTICS
 
-=for author to fill in:
-    List every single error and warning message that the module can
-    generate (even the ones that will "never happen"), with a full
-    explanation of each problem, one or more likely causes, and any
-    suggested remedies.
-
-=over
-
-=item C<< Error message here, perhaps with %s placeholders >>
-
-[Description of error here]
-
-=item C<< Another error message here >>
-
-[Description of error here]
-
-[Et cetera, et cetera]
-
-=back
-
-
-=head1 CONFIGURATION AND ENVIRONMENT
-
-=for author to fill in:
-    A full explanation of any configuration system(s) used by the
-    module, including the names and locations of any configuration
-    files, and the meaning of any environment variables or properties
-    that can be set. These descriptions must also include details of any
-    configuration language used.
-
-Pod::Loom requires no configuration files or environment variables.
+Pod::Loom may generate the following error messages, in addition to
+whatever errors the template class generates.
 
 
 =head1 DEPENDENCIES
 
-=for author to fill in:
-    A list of all the other modules that this module relies upon,
-    including any restrictions on versions, and an indication whether
-    the module is part of the standard Perl distribution, part of the
-    module's distribution, or must be installed separately. ]
-
-None.
-
-
-=head1 INCOMPATIBILITIES
-
-=for author to fill in:
-    A list of any modules that this module cannot be used in conjunction
-    with. This may be due to name conflicts in the interface, or
-    competition for system or program resources, or due to internal
-    limitations of Perl (for example, many modules that use source code
-    filters are mutually incompatible).
-
-None reported.
-
-
-=head1 BUGS AND LIMITATIONS
-
-=for author to fill in:
-    A list of known problems with the module, together with some
-    indication Whether they are likely to be fixed in an upcoming
-    release. Also a list of restrictions on the features the module
-    does provide: data types that cannot be handled, performance issues
-    and the circumstances in which they may arise, practical
-    limitations on the size of data sets, special cases that are not
-    (yet) handled, etc.
-
-No bugs have been reported.
-
-
-=head1 AUTHOR
-
-Christopher J. Madsen  S<< C<< <perl AT cjmweb.net> >> >>
-
-Please report any bugs or feature requests to
-S<< C<< <bug-Pod-Loom AT rt.cpan.org> >> >>,
-or through the web interface at
-L<http://rt.cpan.org/Public/Bug/Report.html?Queue=Pod-Loom>
-
-
-=head1 LICENSE AND COPYRIGHT
-
-Copyright 2009 Christopher J. Madsen
-
-This module is free software; you can redistribute it and/or
-modify it under the same terms as Perl itself. See L<perlartistic>.
-
-
-=head1 DISCLAIMER OF WARRANTY
-
-BECAUSE THIS SOFTWARE IS LICENSED FREE OF CHARGE, THERE IS NO WARRANTY
-FOR THE SOFTWARE, TO THE EXTENT PERMITTED BY APPLICABLE LAW. EXCEPT WHEN
-OTHERWISE STATED IN WRITING THE COPYRIGHT HOLDERS AND/OR OTHER PARTIES
-PROVIDE THE SOFTWARE "AS IS" WITHOUT WARRANTY OF ANY KIND, EITHER
-EXPRESSED OR IMPLIED, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE. THE
-ENTIRE RISK AS TO THE QUALITY AND PERFORMANCE OF THE SOFTWARE IS WITH
-YOU. SHOULD THE SOFTWARE PROVE DEFECTIVE, YOU ASSUME THE COST OF ALL
-NECESSARY SERVICING, REPAIR, OR CORRECTION.
-
-IN NO EVENT UNLESS REQUIRED BY APPLICABLE LAW OR AGREED TO IN WRITING
-WILL ANY COPYRIGHT HOLDER, OR ANY OTHER PARTY WHO MAY MODIFY AND/OR
-REDISTRIBUTE THE SOFTWARE AS PERMITTED BY THE ABOVE LICENSE, BE
-LIABLE TO YOU FOR DAMAGES, INCLUDING ANY GENERAL, SPECIAL, INCIDENTAL,
-OR CONSEQUENTIAL DAMAGES ARISING OUT OF THE USE OR INABILITY TO USE
-THE SOFTWARE (INCLUDING BUT NOT LIMITED TO LOSS OF DATA OR DATA BEING
-RENDERED INACCURATE OR LOSSES SUSTAINED BY YOU OR THIRD PARTIES OR A
-FAILURE OF THE SOFTWARE TO OPERATE WITH ANY OTHER SOFTWARE), EVEN IF
-SUCH HOLDER OR OTHER PARTY HAS BEEN ADVISED OF THE POSSIBILITY OF
-SUCH DAMAGES.
+Pod::Loom depends on L<Moose>, L<Pod::Eventual>, L<PPI>, and
+L<String::RewritePrefix>, which can be found on CPAN.  The template
+class may have additional dependencies.

@@ -7,6 +7,7 @@ use warnings;
 
 {
   sort_attr   => 1,
+  sort_diag   => 1,
   sort_method => 1,
   # This template will be filled in by TemplateCJM:
   version_desc => <<'END VERSION',
