@@ -104,7 +104,7 @@ longer looks like POD.
   );
 
   # Instantiate the template and let it weave the new POD:
-  die "Invalid class name $templateClass"
+  croak "Invalid class name $templateClass"
       unless $templateClass =~ /^[:_A-Z0-9]+$/i;
   eval "require $templateClass;" or croak "Unable to load $templateClass: $@";
 
