@@ -204,21 +204,23 @@ sub _sort_collected
     my $sort = $self->_find_sort_order($type) or next;
 
     # Begin Schwartzian transform (entry_name => entry):
+    #   We convert the keys to lower case to make it case insensitive.
     my @sortable = map { /^=\w+ \s+ (\S (?:.*\S)? )/x
-                             ? [ $1 => $_ ]
+                             ? [ lc $1 => $_ ]
                              : [ '' => $_ ] # Should this even be allowed?
                        } @{ $collected->{$type} };
 
     # Set up %special to handle any top-of-the-list entries:
     my $count = 1;
     my %special;
-    %special = map { $_ => $count++ } @$sort if ref $sort;
+    %special = map { lc $_ => $count++ } @$sort if ref $sort;
 
     # Sort specials first, then the rest ASCIIbetically:
     my @sorted =
         map { $_->[1] }         # finish the Schwartzian transform
         sort { ($special{$a->[0]} || $count) <=> ($special{$b->[0]} || $count)
-               or $a->[0] cmp $b->[0] }
+               or $a->[0] cmp $b->[0]   # if the keys match
+               or $a->[1] cmp $b->[1] } # compare the whole entry
         @sortable;
 
     $collected->{$type} = \@sorted;
