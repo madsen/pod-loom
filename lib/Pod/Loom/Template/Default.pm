@@ -189,7 +189,7 @@ sub section_AUTHOR
     if ($authorCredit =~ /(.*\S)\s*(<.*>)$/) {
       my ($author, $email) = ($1, $2);
       $email =~ s/@/ AT /g;
-      $pod .= "$author  S<< C<< <$email> >> >>\n";
+      $pod .= "$author  S<< C<< $email >> >>\n";
     } else {
       $pod .= "$authorCredit\n";
     }
