@@ -42,19 +42,6 @@ use String::RewritePrefix ();
 #=====================================================================
 # Package Pod::Loom:
 
-{
-  package Pod::Loom::_Logger;
-  sub log { printf "%s\n", String::Flogger->flog($_[1]) }
-  sub new { bless {} => shift }
-}
-
-has logger => (
-  is      => 'ro',
-  lazy    => 1,
-  default => sub { Pod::Loom::_Logger->new },
-  handles => [ qw(log) ]
-);
-
 has template => (
   is      => 'rw',
   isa     => 'Str',
