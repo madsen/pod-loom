@@ -27,18 +27,22 @@ use Pod::Loom::Parser ();
 =head1 ATTRIBUTES
 
 All attributes beginning with C<tmp_> are reserved and must not be
-defined by subclasses.
+defined by subclasses.  In addition, attributes beginning with
+C<sort_> are reserved for indicating whether collected entries should
+be sorted.
 
 =attr tmp_collected
 
 This is a hashref of arrayrefs.  The keys are the POD commands
 returned by L</"collect_commands">, plus any format names that begin
-with C<Pod::Loom>.
+with C<Pod::Loom>.  Each value is an arrayref of POD blocks.
+It is filled in by the L</"weave"> method.
 
 =attr tmp_filename
 
 This is the name of the file being processed.  This is only for
 informational purposes; it need not represent an actual file on disk.
+(The L</"weave"> method stores the filename here.)
 
 =cut
 
@@ -70,11 +74,65 @@ our @EXPORT_OK = qw(%E);
 #---------------------------------------------------------------------
 # These methods are likely to be overloaded in subclasses:
 
+=method collect_commands
+
+  $arrayRef = $tmp->collect_commands;
+
+This method should be overriden in subclasses to indicate what POD
+commands should be collected for the template to stitch together.
+This should include C<head1>, or the template is unlikely to work
+properly.  The default method indicates only C<head1> is collected.
+
+=method override_section
+
+  $boolean = $tmp->override_section($section_title);
+
+Normally, if a section appears in the document, it remains unchanged
+by the template.  However, a template may want to rewrite certain
+sections.  C<override_section> is called when the specified section is
+present in the document.  If it returnes true, then the normal
+C<section_TITLE> method will be called.
+
+=method sections
+
+  @section_titles = $tmp->sections;
+
+This method must be overriden in subclasses.  It returns a list of
+section titles in the order they should appear.  The special title
+C<*> indicates where sections that appear in the document but are not
+in this list will be placed.  (If C<*> is not in this list, such
+sections will be dropped.)
+
+The list can include sections that the template does not provide.  In
+that case, it simply indicates where the section should be placed if
+the document provides it.
+
+=cut
+
 sub collect_commands { [ 'head1' ] }
 sub override_section { 0 }
 #sub sections        { return } # A subclass must provide this
-
 #---------------------------------------------------------------------
+
+=method expect_sections
+
+  @section_titles = $tmp->expect_sections;
+
+This method returns the section titles in the order they should
+appear.  By default, this is the list from L</"sections">, but it can
+be overriden by the document:
+
+If the document contains C<=for Pod::Loom-sections>, the sections
+listed there (one per line) replace the template's normal section
+list.
+
+If the document contains C<=for Pod::Loom-omit>, the sections listed
+there will not appear in the final document.  (Unless they appeared in
+the document, in which case they will be with the other C<*>
+sections.)
+
+=cut
+
 sub expect_sections
 {
   my ($self) = @_;
@@ -101,9 +159,9 @@ sub expect_sections
 
 =method required_attr
 
-  my @values = $tmp->required_attr($section_title, @attributeNames);
+  @values = $tmp->required_attr($section_title, @attribute_names);
 
-Returns the value of each attribute specified in C<@attributeNames>.
+Returns the value of each attribute specified in C<@attribute_names>.
 If any attribute is C<undef>, dies with a message that
 C<$section_title> requires that attribute.
 
@@ -192,8 +250,18 @@ sub _find_sort_order
 
   $self->$method;
 } # end _find_sort_order
-
 #---------------------------------------------------------------------
+
+=method weave
+
+  $new_pod = $tmp->weave($podRef, $filename);
+
+This is the primary entry point, normally called by Pod::Loom's
+C<weave> method.  It splits the POD as defined by C<collect_commands>,
+then reassembles it.
+
+=cut
+
 sub weave
 {
   my ($self, $podRef, $filename) = @_;
@@ -247,8 +315,20 @@ sub weave
 
   $pod;
 } # end weave
-
 #---------------------------------------------------------------------
+
+=method method_for_section
+
+  $methodRef = $tmp->method_for_section($section_title);
+
+This associates a section title with the template method that
+implements it.  By default, it prepends C<section_> to the title, and
+then converts any non-alphanumeric characters to underscores.
+
+The special C<*> section is associated with the method C<other_sections>.
+
+=cut
+
 sub method_for_section
 {
   my ($self, $title) = @_;
@@ -269,3 +349,10 @@ no Moose;
 __PACKAGE__->meta->make_immutable;
 1;
 
+=head1 DIAGNOSTICS
+
+The following errors are classified like Perl's built-in diagnostics
+(L<perldiag>):
+
+     (S) A severe warning
+     (F) A fatal error (trappable)
