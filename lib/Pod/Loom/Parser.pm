@@ -25,8 +25,24 @@ use warnings;
 
 use Pod::Eventual ();
 our @ISA = qw(Pod::Eventual);
-
 #---------------------------------------------------------------------
+
+=head1 DEPENDENCIES
+
+Pod::Loom::Parser requires L<Pod::Eventual>, which can be found on CPAN.
+
+=for Pod::Loom-sort_method
+new
+
+=method new
+
+  $parser = Pod::Loom::Parser->new(\@collect_commands);
+
+Constructs a new Pod::Loom::Parser.  You pass it an arrayref of the
+POD commands at which the POD should be chopped.
+
+=cut
+
 sub new
 {
   my ($class, $collectCommands) = @_;
@@ -96,8 +112,27 @@ sub handle_blank
     $self->handle_event($event);
   }
 } # end handle_event
-
 #---------------------------------------------------------------------
+
+=method collected
+
+  $hashRef = $parser->collected;
+
+This returns the POD chunks that the document was chopped into.  There
+is one entry for each of the C<@collect_commands> that were passed to
+the constructor.  The value is an arrayref of strings, one for each
+time that command appeared in the document.  Each chunk contains all
+the text from the command up to (but not including) the command that
+started the next chunk.  Chunks appear in document order.
+
+If one of the commands did not appear in the document, its value will
+be an empty arrayref.
+
+In addition, any POD targeted to a format matching C</^Pod::Loom\b/>
+will be collected under the format name.
+
+=cut
+
 sub collected { shift->{collect} }
 
 #=====================================================================
@@ -106,3 +141,30 @@ sub collected { shift->{collect} }
 1;
 
 __END__
+
+=head1 SYNOPSIS
+
+  use Pod::Loom::Parser;
+
+  my $parser = Pod::Loom::Parser->new( ['head1'] );
+  $parser->read_file('lib/Foo/Bar.pm');
+  my $collectedHash = $parser->collected;
+
+  foreach my $block (@{ $collectedHash->{head1} }) {
+    printf "---\n%s\n", $block;
+  }
+
+=head1 DESCRIPTION
+
+Pod::Loom::Parser is a subclass of L<Pod::Eventual> intended for use
+by L<Pod::Loom::Template>.  It breaks the POD into chunks based on a
+list of POD commands.  Each chunk begins with one of the commands, and
+contains all the POD up until the next selected command.
+
+The commands do not need to be valid POD commands.  You can invent
+commands like C<=attr> or C<=method>.
+
+=head1 METHODS
+
+See L<Pod::Eventual> for the C<read_handle>, C<read_file>, and
+C<read_string> methods, which you use to feed POD into the parser.
