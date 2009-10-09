@@ -90,7 +90,7 @@ properly.  The default method indicates only C<head1> is collected.
 Normally, if a section appears in the document, it remains unchanged
 by the template.  However, a template may want to rewrite certain
 sections.  C<override_section> is called when the specified section is
-present in the document.  If it returnes true, then the normal
+present in the document.  If it returns true, then the normal
 C<section_TITLE> method will be called.  (If it returns true but the
 C<section_TITLE> method doesn't exist, the section will be dropped.)
 
