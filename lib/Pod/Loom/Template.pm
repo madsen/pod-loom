@@ -323,6 +323,34 @@ This is the primary entry point, normally called by Pod::Loom's
 C<weave> method.  It splits the POD as defined by C<collect_commands>,
 then reassembles it.
 
+It does so by calling L</"expect_sections"> to get the list of section
+titles that should appear.  It then considers each section in order:
+
+=over
+
+=item 1.
+
+If the section appeared in the original document, it calls
+C<< $tmp->override_section($title) >>.  If that returns false,
+it copies the section from the original document to the new document
+and proceeds to the next section.  Otherwise, it continues to step 2.
+
+=item 2.
+
+It calls C<< $tmp->method_for_section($title) >> to get the method
+that will handle that section.  If that returns no method, it proceeds
+to the next section.
+
+=item 3.
+
+It calls the method from step 2, passing it two parameters: the
+section title and the text of the section from the original document
+(or undef).  Whatever text the method returns is appended to the new
+document.  (The method may return the empty string, but should not
+return undef).
+
+=back
+
 =diag C<< Can't find heading in %s >>
 
 (F) Pod::Loom couldn't determine the section title for the specified
