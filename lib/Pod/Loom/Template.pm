@@ -36,7 +36,7 @@ be sorted.
 This is a hashref of arrayrefs.  The keys are the POD commands
 returned by L</"collect_commands">, plus any format names that begin
 with C<Pod::Loom>.  Each value is an arrayref of POD blocks.
-It is filled in by the L</"weave"> method.
+It is filled in by the L</"parse_pod"> method.
 
 =attr tmp_filename
 
@@ -121,11 +121,11 @@ has sections => (
 
 =method expect_sections
 
-  @section_titles = $tmp->expect_sections;
+  $section_titles = $tmp->expect_sections;
 
-This method returns the section titles in the order they should
-appear.  By default, this is the list from L</"sections">, but it can
-be overriden by the document:
+This method returns an arrayref containing the section titles in the
+order they should appear.  By default, this is the list from
+L</"sections">, but it can be overriden by the document:
 
 If the document contains C<=for Pod::Loom-sections>, the sections
 listed there (one per line) replace the template's normal section
@@ -176,7 +176,7 @@ sub expect_sections
     $omit{$_} = 1 for split /\s*\n/, $block;
   } # end foreach $block
 
-  return grep { not $omit{$_} } @sections;
+  return [ grep { not $omit{$_} } @sections ];
 } # end expect_sections
 
 #---------------------------------------------------------------------
@@ -320,11 +320,147 @@ sub _find_sort_order
   $new_pod = $tmp->weave(\$old_pod, $filename);
 
 This is the primary entry point, normally called by Pod::Loom's
-C<weave> method.  It splits the POD as defined by C<collect_commands>,
-then reassembles it.
+C<weave> method.
 
-It does so by calling L</"expect_sections"> to get the list of section
-titles that should appear.  It then considers each section in order:
+First, it stores the filename in the C<tmp_filename> attribute.
+
+It then calls:
+
+=over
+
+=item 1.
+
+L</"parse_pod"> to parse the POD.
+
+=item 2.
+
+L</"post_parse"> to do additional processing.
+
+=item 3.
+
+L</"expect_sections"> to get the list of section titles.
+
+=item 4.
+
+L</"collect_sections"> to get the text of each section from
+the original document.
+
+=item 5.
+
+L</"generate_pod"> to produce the new document.
+
+=back
+
+=cut
+
+sub weave
+{
+  my ($self, $podRef, $filename) = @_;
+
+  $self->tmp_filename($filename);
+
+  $self->parse_pod($podRef);
+
+  $self->post_parse;
+
+  my $sectionList = $self->expect_sections;
+
+  $self->generate_pod($sectionList, $self->collect_sections($sectionList));
+} # end weave
+#---------------------------------------------------------------------
+
+=method parse_pod
+
+  $tmp->parse_pod(\$pod);
+
+Parse the document, which is passed by reference.  The default
+implementation splits up the POD using L<Pod::Loom::Parser>, breaking
+it up according to L</"collect_commands">.  The resulting chunks are
+stored in the C<tmp_collected> attribute.
+
+=cut
+
+sub parse_pod
+{
+  my ($self, $podRef) = @_;
+
+  my $pe = Pod::Loom::Parser->new( $self->collect_commands );
+  $pe->read_string($$podRef);
+  $self->tmp_collected( $pe->collected );
+} # end parse_pod
+#---------------------------------------------------------------------
+
+=method post_parse
+
+  $tmp->post_parse()
+
+This method is called after C<parse_pod>.  The default implementation
+sorts the collected POD chunks if requested to by the document or the
+C<sort_> attributes.
+
+=cut
+
+sub post_parse
+{
+  my ($self) = @_;
+
+  $self->_sort_collected;
+} # end post_parse
+#---------------------------------------------------------------------
+
+=method collect_sections
+
+  $section_text = $tmp->collect_sections($section_list)
+
+This method collects the text of each section in the original document
+based on the $section_list (which comes from L</"expect_sections">).
+It returns a hashref keyed on section title.
+
+Any sections that appeared in the original document but are not in
+C<$section_list> are concatenated to form the C<*> section.
+
+=diag C<< Can't find heading in %s >>
+
+(F) Pod::Loom couldn't determine the section title for the specified
+section.  Is it formatted properly?
+
+=cut
+
+sub collect_sections
+{
+  my ($self, $sectionList) = @_;
+
+  # Split out the expected sections:
+
+  my %expectedSection = map { $_ => 1 } @$sectionList;
+
+  my $heads = $self->tmp_collected->{head1};
+  my %section;
+
+  foreach my $h (@$heads) {
+    $h =~ /^=head1\s+(.+?)(?=\n*\z|\n\n)/ or die "Can't find heading in $h";
+    my $title = $1;
+
+    if ($expectedSection{$title}) {
+      warn "Duplicate section $title" if $section{$title};
+      $section{$title} .= $h;
+    } else {
+      $section{'*'} .= $h;
+    }
+  } # end foreach $h in @$heads
+
+  return \%section;
+} # end collect_sections
+#---------------------------------------------------------------------
+
+=method generate_pod
+
+  $pod = $tmp->generate_pod($section_list, $section_text)
+
+This method is passed a list of section titles (from
+L</"expect_sections">) and a hash containing the original text of each
+section (from L</"collect_sections">.  It then considers each section
+in order:
 
 =over
 
@@ -351,67 +487,32 @@ return undef).
 
 =back
 
-=diag C<< Can't find heading in %s >>
-
-(F) Pod::Loom couldn't determine the section title for the specified
-section.  Is it formatted properly?
-
 =cut
 
-sub weave
+sub generate_pod
 {
-  my ($self, $podRef, $filename) = @_;
-
-  $self->tmp_filename($filename);
-
-  {
-    my $pe = Pod::Loom::Parser->new( $self->collect_commands );
-    $pe->read_string($$podRef);
-    $self->tmp_collected( $pe->collected );
-  }
-
-  $self->_sort_collected;
-
-  # Split out the expected sections:
-  my @expectSections = $self->expect_sections;
-
-  my %expectedSection = map { $_ => 1 } @expectSections;
-
-  my $heads = $self->tmp_collected->{head1};
-  my %section;
-
-  foreach my $h (@$heads) {
-    $h =~ /^=head1\s+(.+?)(?=\n*\z|\n\n)/ or die "Can't find heading in $h";
-    my $title = $1;
-
-    if ($expectedSection{$title}) {
-      warn "Duplicate section $title" if $section{$title};
-      $section{$title} .= $h;
-    } else {
-      $section{'*'} .= $h;
-    }
-  } # end foreach $h in @$heads
+  my ($self, $sectionList, $sectionText) = @_;
 
   # Now build the new POD:
   my $pod = '';
 
-  foreach my $title (@expectSections) {
-    if ($section{$title} and not $self->override_section($title)) {
-      $pod .= $section{$title};
+  foreach my $title (@$sectionList) {
+    if ($sectionText->{$title} and not $self->override_section($title)) {
+      $pod .= $sectionText->{$title};
     } # end if document supplied section and we don't override it
     else {
       my $method = $self->method_for_section($title);
 
-      $pod .= $self->$method($title, $section{$title})
+      $pod .= $self->$method($title, $sectionText->{$title})
           if $method;
     } # end else let method generate section
 
     # Make sure the document ends with a blank line:
     $pod =~ s/\n*\z/\n\n/ if $pod;
-  } # end foreach $title in @expectSections
+  } # end foreach $title in @$sectionList
 
   $pod;
-} # end weave
+} # end generate_pod
 #---------------------------------------------------------------------
 
 =method method_for_section
