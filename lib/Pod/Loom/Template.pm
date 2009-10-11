@@ -430,12 +430,14 @@ sub method_for_section
 {
   my ($self, $title) = @_;
 
+  # Generate the method name:
   my $method = "section_$title";
   if ($title eq '*') { $method = "other_sections" }
   else {
     $method =~ s/[^A-Z0-9_]/_/gi;
   }
 
+  # See if we actually have a method by that name:
   $self->can($method);
 } # end method_for_section
 #---------------------------------------------------------------------
@@ -492,7 +494,7 @@ __PACKAGE__->meta->make_immutable;
 Pod::Loom::Template is intended as the standard base class for
 Pod::Loom templates.  It provides the engine that splits apart the POD
 and reassembles it.  The subclass needs to specify how the POD is
-reassembled.
+reassembled.  See the L</"weave"> method for details.
 
 =head2 Controlling the template
 
