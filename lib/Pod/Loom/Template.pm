@@ -378,6 +378,7 @@ sub weave
           if $method;
     } # end else let method generate section
 
+    # Make sure the document ends with a blank line:
     $pod =~ s/\n*\z/\n\n/ if $pod;
   } # end foreach $title in @expectSections
 
@@ -409,6 +410,47 @@ sub method_for_section
 
   $self->can($method);
 } # end method_for_section
+#---------------------------------------------------------------------
+
+=method joined_section
+
+  $podText = $tmp->joined_section($oldcmd, $newcmd, $title, $pod);
+
+This method may be useful to subclasses that want to build sections
+out of collected commands.  C<$oldcmd> must be one of the entries from
+L</"collect_commands">.  C<$newcmd> is the POD command that should be
+used for each entry (like C<head2> or C<item>).  C<$title> is the
+section title, and C<$pod> is the text of that section from the
+original document (if any).
+
+Each collected entry is appended to the original section.  If there
+was no original section, a simple C<=head1 $title> command is added.
+If C<$newcmd> is C<item>, then C<=over> and C<=back> are added
+automatically.
+
+=cut
+
+sub joined_section
+{
+  my ($self, $cmd, $newcmd, $title, $pod) = @_;
+
+  my $entries = $self->tmp_collected->{$cmd};
+
+  return ($pod || '') unless $entries and @$entries;
+
+  $pod = "=head1 $title\n" unless $pod;
+
+  $pod .= "\n=over\n" if $newcmd eq 'item';
+
+  foreach (@$entries) {
+    s/^=\w+/=$newcmd/ or die "Bad entry $_";
+    $pod .= "\n$_";
+  } # end foreach
+
+  $pod .= "\n=back\n" if $newcmd eq 'item';
+
+  return $pod;
+} # end joined_section
 
 #=====================================================================
 # Package Return Value:
