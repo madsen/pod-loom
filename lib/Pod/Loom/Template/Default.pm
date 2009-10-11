@@ -246,6 +246,11 @@ Required by AUTHOR.
 An arrayref of author names (with optional email address in C<< <> >>).
 Required by AUTHOR.
 
+=attr repository
+
+An optional string giving the location of the distribution's public
+source code repository.
+
 =method section_AUTHOR
 
 First, it lists the authors from the L</"authors"> attribute
@@ -257,10 +262,16 @@ to the distribution's queue at rt.cpan.org (using the L</"dist"> attribute):
   or through the web interface at
   L<http://rt.cpan.org/Public/Bug/Report.html?Queue=<dist>>
 
+And, if C<repository> is set:
+
+  You can follow or contribute to <dist>'s development at
+  <repository>.
+
 =cut
 
 has qw(dist    is ro  isa Str);
 has qw(authors is ro  isa ArrayRef[Str]);
+has qw(repository is ro  isa Str);
 
 sub section_AUTHOR
 {
@@ -280,13 +291,25 @@ sub section_AUTHOR
     }
   } # end foreach $authorCredit in @$authors
 
-  return $pod . <<"END AUTHOR";
+  $pod .= <<"END AUTHOR";
 
 Please report any bugs or feature requests to
 S<< C<< <bug-$dist AT rt.cpan.org> >> >>,
 or through the web interface at
 L<http://rt.cpan.org/Public/Bug/Report.html?Queue=$dist>
 END AUTHOR
+
+  my $repo = $self->repository;
+  if ($repo) {
+    $repo = "L<< $repo >>" if $repo =~ /^https?:/;
+
+    $pod .= <<"END REPOSITORY";
+\nYou can follow or contribute to ${dist}'s development at
+$repo.
+END REPOSITORY
+  } # end if $self->repository
+
+  return $pod;
 } # end section_AUTHOR
 #---------------------------------------------------------------------
 
