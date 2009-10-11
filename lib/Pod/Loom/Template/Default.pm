@@ -144,7 +144,7 @@ sub section_ATTRIBUTES
 {
   my $self = shift;
 
-  $self->joined_section(attr => @_);
+  $self->joined_section(attr => 'head2', @_);
 } # end section_ATTRIBUTES
 #---------------------------------------------------------------------
 
@@ -158,7 +158,7 @@ sub section_METHODS
 {
   my $self = shift;
 
-  $self->joined_section(method => @_);
+  $self->joined_section(method => 'head2', @_);
 } # end section_METHODS
 
 #---------------------------------------------------------------------
@@ -170,11 +170,29 @@ sub override_section
           $title eq 'DIAGNOSTICS' or
           $title eq 'METHODS');
 } # end override_section
-
 #---------------------------------------------------------------------
+
+=method joined_section
+
+  $podText = $tmp->joined_section($oldcmd, $newcmd, $title, $pod);
+
+This method may be useful to subclasses that want to build sections
+out of collected commands.  C<$oldcmd> must be one of the entries from
+L</"collect_commands">.  C<$newcmd> is the POD command that should be
+used for each entry (like C<head2> or C<item>).  C<$title> is the
+section title, and C<$pod> is the text of that section from the
+original document (if any).
+
+Each collected entry is appended to the original section.  If there
+was no original section, a simple C<=head1 $title> command is added.
+If C<$newcmd> is C<item>, then C<=over> and C<=back> are added
+automatically.
+
+=cut
+
 sub joined_section
 {
-  my ($self, $cmd, $title, $pod) = @_;
+  my ($self, $cmd, $newcmd, $title, $pod) = @_;
 
   my $entries = $self->tmp_collected->{$cmd};
 
@@ -182,10 +200,14 @@ sub joined_section
 
   $pod = "=head1 $title\n" unless $pod;
 
+  $pod .= "\n=over\n" if $newcmd eq 'item';
+
   foreach (@$entries) {
-    s/^=\w+/=head2/ or die "Bad entry $_";
+    s/^=\w+/=$newcmd/ or die "Bad entry $_";
     $pod .= "\n$_";
   } # end foreach
+
+  $pod .= "\n=back\n" if $newcmd eq 'item';
 
   return $pod;
 } # end joined_section
@@ -201,23 +223,10 @@ diagnostics, no DIAGNOSTICS section will be added.
 
 sub section_DIAGNOSTICS
 {
-  my ($self, $title, $pod) = @_;
+  my $self = shift;
 
-  my $entries = $self->tmp_collected->{diag};
-
-  return ($pod || '') unless $entries and @$entries;
-
-  $pod = "=head1 $title\n" unless $pod;
-
-  $pod .= "\n=over\n";
-
-  foreach (@$entries) {
-    s/^=\w+/=item/ or die "Bad entry $_";
-    $pod .= "\n$_";
-  } # end foreach
-
-  return $pod . "\n=back\n";
-} # end joined_section
+  $self->joined_section(diag => 'item', @_);
+} # end section_DIAGNOSTICS
 #---------------------------------------------------------------------
 
 =method section_CONFIGURATION_AND_ENVIRONMENT
