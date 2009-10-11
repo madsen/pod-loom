@@ -271,7 +271,7 @@ And, if C<repository> is set:
 
 has qw(dist    is ro  isa Str);
 has qw(authors is ro  isa ArrayRef[Str]);
-has qw(repository is ro  isa Str);
+has qw(repository is ro  isa Maybe[Str]);
 
 sub section_AUTHOR
 {
