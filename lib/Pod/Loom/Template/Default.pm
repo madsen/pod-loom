@@ -262,7 +262,7 @@ to the distribution's queue at rt.cpan.org (using the L</"dist"> attribute):
   or through the web interface at
   L<http://rt.cpan.org/Public/Bug/Report.html?Queue=<dist>>
 
-And, if C<repository> is set:
+And, if L</"repository"> is set:
 
   You can follow or contribute to <dist>'s development at
   <repository>.
