@@ -177,7 +177,8 @@ SYNOPSIS
 =head1 WARNING
 
 This code is still in flux.  Use it at your own risk, and be prepared
-to adapt to changes.
+to adapt to changes.  The POD syntax should be fairly stable, but if
+you write your own templates, they might need to change.
 
 =head1 SYNOPSIS
 
