@@ -17,7 +17,7 @@ package Pod::Loom::Template;
 # ABSTRACT: Standard base class for Pod::Loom templates
 #---------------------------------------------------------------------
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use 5.008;
 use Moose;
@@ -96,7 +96,8 @@ C<section_TITLE> method doesn't exist, the section will be dropped.)
 
 =attr sections
 
-Subclasses must provide a default value for this attribute.  It is an
+Subclasses must provide a builder for this attribute named
+C<_build_sections>. It is an
 arrayref of section titles in the order they should appear.  The
 special title C<*> indicates where sections that appear in the
 document but are not in this list will be placed.  (If C<*> is not in
@@ -115,6 +116,7 @@ has sections => (
   is       => 'ro',
   isa      => 'ArrayRef[Str]',
   required => 1,
+  builder  => '_build_sections',
 );
 
 #---------------------------------------------------------------------

@@ -17,7 +17,7 @@ package Pod::Loom::Template::Default;
 # ABSTRACT: Default template for Pod::Loom
 #---------------------------------------------------------------------
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use 5.008;
 use Moose;
@@ -61,7 +61,7 @@ our @sections =
    'BUGS AND LIMITATIONS',
    'AUTHOR', 'COPYRIGHT AND LICENSE', 'DISCLAIMER OF WARRANTY');
 
-has qw(+sections default) => sub { \@sections };
+sub _build_sections { \@sections };
 #---------------------------------------------------------------------
 
 =attr abstract
