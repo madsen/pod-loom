@@ -5,6 +5,7 @@ Revision history for Pod-Loom
 	  Templates should now provide a _build_sections method
 	  instead of a default value for sections
 	- Added the Extender role for custom templates
+	- Added support for Pod::Loom-group_COMMAND to Template
 
 0.01   October 11, 2009
 	- Initial release

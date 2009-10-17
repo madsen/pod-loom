@@ -48,10 +48,12 @@ sub new
   my ($class, $collectCommands) = @_;
 
   my %collect = map { $_ => [] } @$collectCommands;
+  my %groups  = map { $_ => {} } @$collectCommands;
 
   bless {
     collect => \%collect,
     dest    => undef,
+    groups  => \%groups,
   }, $class;
 } # end new
 
@@ -68,6 +70,11 @@ sub handle_event
 
     # See if this changes the output location:
     my $collector = $self->{collect}{ $cmd };
+
+    if (not $collector and $cmd =~ /^(\w+)-(\S+)/ and $self->{collect}{$1}) {
+      $collector = $self->{collect}{$cmd} = [];
+      $self->{groups}{$1}{$2} = 1;
+    } # end if new group
 
     # Special handling for Pod::Loom sections:
     if ($cmd =~ /^(begin|for)$/ and
@@ -134,6 +141,29 @@ will be collected under the format name.
 =cut
 
 sub collected { shift->{collect} }
+#---------------------------------------------------------------------
+
+=method groups
+
+  $hashRef = $parser->groups;
+
+This returns a hashref with one entry for each of the
+C<@collect_commands>.  Each value is a hashref whose keys are the
+categories used with that command.  For example, if C<attr> was a
+collected command, and the document contained these entries:
+
+  =attr-foo attr1
+  =attr-bar attr2
+  =attr-foo attr3
+  =attr attr4
+
+then C<< keys %{ $parser->groups->{attr} } >> would return C<bar> and
+C<foo>.  (The C<=attr> without a category does not get an entry in
+this hash.)
+
+=cut
+
+sub groups { shift->{groups} }
 
 #=====================================================================
 # Package Return Value:

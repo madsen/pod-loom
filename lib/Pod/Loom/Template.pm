@@ -44,11 +44,22 @@ This is the name of the file being processed.  This is only for
 informational purposes; it need not represent an actual file on disk.
 (The L</"weave"> method stores the filename here.)
 
+=attr tmp_groups
+
+This is a hashref of hashrefs.  The keys are the POD commands returned
+by L</"collect_commands">, Each value is an hashref of group codes.
+It is filled in by the L</"parse_pod"> method.
+
 =cut
 
 has tmp_collected => (
   is       => 'rw',
-  isa      => 'HashRef',
+  isa      => 'HashRef[ArrayRef]',
+);
+
+has tmp_groups => (
+  is       => 'rw',
+  isa      => 'HashRef[HashRef]',
 );
 
 has tmp_filename => (
@@ -256,32 +267,35 @@ sub _sort_collected
   my $self = shift;
 
   my $collected = $self->tmp_collected;
+  my $groups    = $self->tmp_groups;
 
   foreach my $type (@{ $self->collect_commands }) {
     # Is this type of entry sorted at all?
     my $sort = $self->_find_sort_order($type) or next;
 
-    # Begin Schwartzian transform (entry_name => entry):
-    #   We convert the keys to lower case to make it case insensitive.
-    my @sortable = map { /^=\w+ \s+ (\S (?:.*\S)? )/x
-                             ? [ lc $1 => $_ ]
-                             : [ '' => $_ ] # Should this even be allowed?
-                       } @{ $collected->{$type} };
+    foreach my $group ($type, map { "$type-$_" } keys %{ $groups->{$type} }) {
+      # Begin Schwartzian transform (entry_name => entry):
+      #   We convert the keys to lower case to make it case insensitive.
+      my @sortable = map { /^=\S+ \s+ (\S (?:.*\S)? )/x
+                               ? [ lc $1 => $_ ]
+                               : [ '' => $_ ] # Should this even be allowed?
+                         } @{ $collected->{$group} };
 
-    # Set up %special to handle any top-of-the-list entries:
-    my $count = 1;
-    my %special;
-    %special = map { lc $_ => $count++ } @$sort if ref $sort;
+      # Set up %special to handle any top-of-the-list entries:
+      my $count = 1;
+      my %special;
+      %special = map { lc $_ => $count++ } @$sort if ref $sort;
 
-    # Sort specials first, then the rest ASCIIbetically:
-    my @sorted =
-        map { $_->[1] }         # finish the Schwartzian transform
-        sort { ($special{$a->[0]} || $count) <=> ($special{$b->[0]} || $count)
-               or $a->[0] cmp $b->[0]   # if the keys match
-               or $a->[1] cmp $b->[1] } # compare the whole entry
-        @sortable;
+      # Sort specials first, then the rest ASCIIbetically:
+      my @sorted =
+          map { $_->[1] }         # finish the Schwartzian transform
+          sort { ($special{$a->[0]} || $count) <=> ($special{$b->[0]} || $count)
+                 or $a->[0] cmp $b->[0]   # if the keys match
+                 or $a->[1] cmp $b->[1] } # compare the whole entry
+          @sortable;
 
-    $collected->{$type} = \@sorted;
+      $collected->{$group} = \@sorted;
+    } # end foreach $group of $type
   } # end foreach $type of $collected entry
 } # end _sort_collected
 
@@ -389,6 +403,7 @@ sub parse_pod
   my $pe = Pod::Loom::Parser->new( $self->collect_commands );
   $pe->read_string($$podRef);
   $self->tmp_collected( $pe->collected );
+  $self->tmp_groups(    $pe->groups    );
 } # end parse_pod
 #---------------------------------------------------------------------
 
@@ -561,6 +576,12 @@ was no original section, a simple C<=head1 $title> command is added.
 If C<$newcmd> is C<item>, then C<=over> and C<=back> are added
 automatically.
 
+If the document divided this section into groups (see
+L</"Pod::Loom-group_COMMAND">), that is handled automatically by this
+method.  If C<$newcmd> is a C<headN>, and any of the category headers
+contains a C<=headN> command, then C<$newcmd> is automatically
+incremented.  (E.g., C<head2> becomes C<head3>).
+
 =cut
 
 sub joined_section
@@ -568,22 +589,142 @@ sub joined_section
   my ($self, $cmd, $newcmd, $title, $pod) = @_;
 
   my $entries = $self->tmp_collected->{$cmd};
+  my $groups  = $self->tmp_groups->{$cmd};
 
-  return ($pod || '') unless $entries and @$entries;
+  return ($pod || '') unless ($entries and @$entries)
+                          or ($groups  and %$groups);
 
   $pod = "=head1 $title\n" unless $pod;
+
+  return $self->_join_groups($cmd, $newcmd, $title, $pod, $groups)
+      if $groups and %$groups;
+
+=diag C<< Found Pod::Loom-group_%s in %s, but no groups were used >>
+
+(S) You indicated that a command (like C<=method>) was going to be
+grouped, but didn't actually use any groups.
+See L</"Pod::Loom-group_COMMAND">.
+
+=cut
+
+  warn("Found Pod::Loom-group_$cmd in " . $self->tmp_filename .
+       ", but no groups were used\n")
+      if $self->tmp_collected->{"Pod::Loom-group_$cmd"};
+
+  return $pod . $self->join_entries($newcmd, $entries);
+} # end joined_section
+#---------------------------------------------------------------------
+
+=method join_entries
+
+  $podText = $tmp->join_entries($newcmd, \@entries);
+
+This method is used by L</"joined_section">, but may be useful to
+subclasses also.  Each element of C<@entries> must begin with a POD
+command, which will be changed to C<$newcmd>.  It returns the entries
+joined together, surrounded by C<=over> and C<=back> if C<$newcmd> is
+C<item>.
+
+=cut
+
+sub join_entries
+{
+  my ($self, $newcmd, $entries) = @_;
+
+  my $pod = '';
 
   $pod .= "\n=over\n" if $newcmd eq 'item';
 
   foreach (@$entries) {
-    s/^=\w+/=$newcmd/ or die "Bad entry $_";
+    s/^=\S+/=$newcmd/ or die "Bad entry $_";
     $pod .= "\n$_";
   } # end foreach
 
   $pod .= "\n=back\n" if $newcmd eq 'item';
 
   return $pod;
-} # end joined_section
+} # end join_entries
+
+#---------------------------------------------------------------------
+# Called by joined_section when it determines there are groups:
+
+sub _join_groups
+{
+  my ($self, $cmd, $newcmd, $title, $pod, $groups) = @_;
+
+  my $groupHeaders = $self->tmp_collected->{"Pod::Loom-group_$cmd"};
+
+=diag C<< %s was grouped, but no Pod::Loom-group_%s found in %s >>
+
+(F) You used categories with a command (like C<=method-cat>), but didn't
+have any Pod::Loom-group_COMMAND blocks.  See L</"Pod::Loom-group_COMMAND">.
+
+=cut
+
+  die("=$cmd was grouped, but no Pod::Loom-group_$cmd found in " .
+      $self->tmp_filename . "\n")
+      unless $groupHeaders;
+
+  # We might need to go down a level:
+  if ($newcmd =~ /^head\d/) {
+    for (;;) {
+      my $re = qr/^=\Q$newcmd\E/m;
+      last unless grep { /$re/ } @$groupHeaders;
+      ++$newcmd;
+    } # end for as long as $newcmd is used in any header
+  } # end if $newcmd is headN
+
+  my $collected = $self->tmp_collected;
+
+  $groups->{''} = 1 if @{ $collected->{$cmd} };
+
+  foreach my $header (@$groupHeaders) {
+    $header =~ s/^\s*(\S+)\s*?\n//
+        or die "No category in Pod::Loom-group_$cmd\n$header";
+
+=diag C<< No category in Pod::Loom-group_%s >>
+
+(F) A Pod::Loom-group_COMMAND block must begin with the category.
+
+=cut
+
+    my $type = $1;
+    my $collectedUnder = "$cmd-$type";
+
+    if ($type eq '*') {
+      $type = '';
+      $collectedUnder = $cmd;
+    }
+
+    unless (delete $groups->{$type}) {
+      warn "No entries for =$cmd-$type";
+      next;
+    }
+
+    $pod =~ s/\n*\z/\n\n/;      # Make sure it ends with a blank line
+    $pod .= ($header .
+             $self->join_entries($newcmd, $collected->{$collectedUnder}));
+  } # end foreach $header in @$groupHeaders
+
+  if (%$groups) {
+    warn "You used =$cmd, but had no Pod::Loom-group_$cmd * section\n"
+        if delete $groups->{''};
+
+=diag C<< You used =%s, but had no Pod::Loom-group_$cmd %s section >>
+
+(F) You must have one Pod::Loom-group_COMMAND block for each category
+you use.  Entries without a category are placed in the C<*> category.
+
+=cut
+
+    warn "You used =$cmd-$_, but had no Pod::Loom-group_$cmd $_ section\n"
+        for sort keys %$groups;
+
+    die "Terminating because of errors\n";
+  } # end if used groups that had no header
+
+  $pod;
+} # end _join_groups
 
 #=====================================================================
 # Package Return Value:
@@ -648,6 +789,40 @@ or
   C<< $object = Class->new() >>
 
   =method C<< $object = Class->new() >>
+
+=item Pod::Loom-group_COMMAND
+
+If you have a lot of attributes or methods, you might want to group
+them into categories.  You do this by appending the category (which is
+an arbitrary string without whitespace) to the command.  For example:
+
+  =attr-fmt font
+
+says that the font attribute is in the C<fmt> category.  You must have
+a C<Pod::Loom-group_COMMAND> block for each category you use.  The
+block begins with the category name on a line by itself.  The rest of
+the block (which may be blank) is POD that will appear before the
+associated entries.
+
+  =begin Pod::Loom-group_attr fmt
+
+  =head2 Formatting Attributes
+
+  These attributes control formatting.
+
+Note: Because Pod::Eventual is not a full-fledged POD parser, you do
+not actually need a matching C<=end> after the C<=begin>, but it won't
+hurt if you use one.  If you don't, the block ends at the next POD
+command in L</"collect_commands">.
+
+Entries that do not contain a category are placed in the special
+category C<*>.
+
+The categories will be listed in the order that the
+Pod::Loom-group_COMMAND blocks appear in the document.  The order of
+entries within each category is controlled as usual.  See
+L</"Pod::Loom-sort_COMMAND">.  (Just ignore the category when defining
+the sort order.)
 
 =item Pod::Loom-template
 
