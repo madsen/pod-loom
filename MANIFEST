@@ -1,0 +1,15 @@
+Changes
+LICENSE
+MANIFEST
+META.yml
+Makefile.PL
+README
+lib/Pod/Loom.pm
+lib/Pod/Loom/Parser.pm
+lib/Pod/Loom/Role/Extender.pm
+lib/Pod/Loom/Template.pm
+lib/Pod/Loom/Template/Default.pm
+lib/Pod/Loom/Template/Identity.pm
+t/00.load.t
+t/release-pod-coverage.t
+t/release-pod-syntax.t
