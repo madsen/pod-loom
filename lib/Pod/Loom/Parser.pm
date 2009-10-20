@@ -17,7 +17,7 @@ package Pod::Loom::Parser;
 # ABSTRACT: Subclass Pod::Eventual for Pod::Loom
 #---------------------------------------------------------------------
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 use 5.008;
 use strict;
