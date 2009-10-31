@@ -2,6 +2,7 @@ Revision history for Pod-Loom
 
 0.03   NOT
 	- If the template returns no POD, don't add a =cut
+	- Changed required_attr to include filename in error message
 
 0.02   October 20, 2009
 	- INCOMPATIBLE CHANGE

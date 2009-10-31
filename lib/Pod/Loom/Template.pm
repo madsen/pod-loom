@@ -17,7 +17,7 @@ package Pod::Loom::Template;
 # ABSTRACT: Standard base class for Pod::Loom templates
 #---------------------------------------------------------------------
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 use 5.008;
 use Moose;
@@ -255,7 +255,8 @@ sub required_attr
     my $v = $self->$_;
     defined $v
         ? $v
-        : die "The $section section requires you to set `$_'\n"
+        : die('Error procesing ' . $self->tmp_filename .
+              ":\n  The $section section requires you to set `$_'\n")
   } @_;
 } # end required_attr
 
