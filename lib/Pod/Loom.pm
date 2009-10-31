@@ -17,9 +17,9 @@ package Pod::Loom;
 # ABSTRACT: Weave pseudo-POD into real POD
 #---------------------------------------------------------------------
 
-our $VERSION = '0.02';
-
 use 5.008;
+our $VERSION = '0.03';
+
 use Moose;
 use Carp qw(croak);
 use PPI ();
@@ -122,6 +122,7 @@ Pod::Loom got an error when it tried to C<require> your template class.
 
   my $newPod = $template->weave(\$sourcePod, $filename);
   $newPod =~ s/(?:\s*\n=cut)*\s*\z/\n\n=cut\n/; # ensure it ends with =cut
+  $newPod = '' if $newPod =~ /^\s*=cut$/;       # if it's blank, ignore it
 
   # Plug the new POD back into the code:
 

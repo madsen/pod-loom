@@ -1,5 +1,8 @@
 Revision history for Pod-Loom
 
+0.03   NOT
+	- If the template returns no POD, don't add a =cut
+
 0.02   October 20, 2009
 	- INCOMPATIBLE CHANGE
 	  Templates should now provide a _build_sections method
