@@ -17,9 +17,9 @@ package Pod::Loom::Template::Default;
 # ABSTRACT: Default template for Pod::Loom
 #---------------------------------------------------------------------
 
-our $VERSION = '0.02';
-
 use 5.008;
+our $VERSION = '0.03';
+
 use Moose;
 extends 'Pod::Loom::Template';
 
@@ -41,21 +41,27 @@ Just like C<sort_attr>, but for diagnostic messages.
 
 Just like C<sort_attr>, but for methods.
 
+=attr sort_sub
+
+Just like C<sort_attr>, but for subroutines.
+
 =cut
 
 has qw(sort_attr   is ro), isa => 'Int | ArrayRef[Str]';
 has qw(sort_diag   is ro), isa => 'Int | ArrayRef[Str]';
 has qw(sort_method is ro), isa => 'Int | ArrayRef[Str]';
+has qw(sort_sub    is ro), isa => 'Int | ArrayRef[Str]';
 
 sub collect_commands
 {
-  [ qw(head1 attr method diag) ];
+  [ qw(head1 attr method sub diag) ];
 } # end collect_commands
 
 #---------------------------------------------------------------------
 # Don't forget to update DESCRIPTION and sort_method if changing this:
 our @sections =
-  (qw(NAME VERSION SYNOPSIS DESCRIPTION ATTRIBUTES METHODS * DIAGNOSTICS),
+  (qw(NAME VERSION SYNOPSIS DESCRIPTION ATTRIBUTES METHODS SUBROUTINES
+      * DIAGNOSTICS),
    'CONFIGURATION AND ENVIRONMENT',
    qw(DEPENDENCIES INCOMPATIBILITIES),
    'BUGS AND LIMITATIONS',
@@ -162,13 +168,29 @@ sub section_METHODS
 } # end section_METHODS
 
 #---------------------------------------------------------------------
+
+=method section_SUBROUTINES
+
+This is just like ATTRIBUTES, except it gathers C<=sub> entries.
+
+=cut
+
+sub section_SUBROUTINES
+{
+  my $self = shift;
+
+  $self->joined_section(sub => 'head2', @_);
+} # end section_SUBROUTINES
+
+#---------------------------------------------------------------------
 sub override_section
 {
   my ($self, $title) = @_;
 
   return ($title eq 'ATTRIBUTES' or
           $title eq 'DIAGNOSTICS' or
-          $title eq 'METHODS');
+          $title eq 'METHODS' or
+          $title eq 'SUBROUTINES');
 } # end override_section
 #---------------------------------------------------------------------
 
@@ -387,6 +409,7 @@ section_NAME
 section_VERSION
 section_ATTRIBUTES
 section_METHODS
+section_SUBROUTINES
 section_DIAGNOSTICS
 section_CONFIGURATION_AND_ENVIRONMENT
 section_INCOMPATIBILITIES
@@ -406,6 +429,7 @@ It places the sections in this order:
      DESCRIPTION
   ++ ATTRIBUTES
   ++ METHODS
+  ++ SUBROUTINES
      *
   ++ DIAGNOSTICS
   +  CONFIGURATION AND ENVIRONMENT

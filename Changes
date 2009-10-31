@@ -4,6 +4,7 @@ Revision history for Pod-Loom
 	- If the template returns no POD, don't add a =cut
 	- Include filename in error messages and warnings
 	  Added the error & warning methods to Template
+	- Added SUBROUTINES section to Template::Default
 
 0.02   October 20, 2009
 	- INCOMPATIBLE CHANGE
