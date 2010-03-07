@@ -17,9 +17,10 @@ package Pod::Loom::Template::Identity;
 # ABSTRACT: Do-nothing template for Pod::Loom
 #---------------------------------------------------------------------
 
-our $VERSION = '0.01';
-
 use 5.008;
+our $VERSION = '0.03';
+# This file is part of {{$dist}} {{$dist_version}} ({{$date}})
+
 use strict;
 use warnings;
 

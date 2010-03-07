@@ -19,6 +19,7 @@ package Pod::Loom;
 
 use 5.008;
 our $VERSION = '0.03';
+# This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use Moose;
 use Carp qw(croak);

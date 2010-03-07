@@ -17,9 +17,10 @@ package Pod::Loom::Template;
 # ABSTRACT: Standard base class for Pod::Loom templates
 #---------------------------------------------------------------------
 
-our $VERSION = '0.03';
-
 use 5.008;
+our $VERSION = '0.03';
+# This file is part of {{$dist}} {{$dist_version}} ({{$date}})
+
 use Moose;
 
 use Pod::Loom::Parser ();
