@@ -1,6 +1,6 @@
 Revision history for Pod-Loom
 
-0.03   NOT
+0.03   March 6, 2010
 	- If the template returns no POD, don't add a =cut
 	- Include filename in error messages and warnings
 	  Added the error & warning methods to Template
