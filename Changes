@@ -1,5 +1,9 @@
 Revision history for Pod-Loom
 
+0.04   NOT
+	- Use S<C<< >>> instead of \xA0
+	  (It's S<< C<< >> >> that Pod::Simple misinterprets.)
+
 0.03   March 6, 2010
 	- If the template returns no POD, don't add a =cut
 	- Include filename in error messages and warnings
