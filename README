@@ -1,0 +1,34 @@
+Pod-Loom version {{$version}}, released {{$date}}
+
+
+Pod::Loom extracts all the POD sections from Perl code, passes the POD
+to a template that may reformat it in various ways, and then returns a
+copy of the code with the reformatted POD at the end.
+
+
+
+INSTALLATION
+
+To install this module, run the following commands:
+
+{{ $t->build_instructions('    ') }}
+
+
+
+DEPENDENCIES
+
+{{ $t->dependency_list }}
+
+
+
+CHANGES
+    Here's what's new in version {{$version}} of Pod-Loom:
+    (See the file "Changes" for the full revision history.)
+
+{{$changes}}
+
+
+
+COPYRIGHT AND LICENCE
+
+{{ local $_ = $zilla->license->notice; chomp; $_ }}
