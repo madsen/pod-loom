@@ -18,7 +18,7 @@ package Pod::Loom::Template::Default;
 #---------------------------------------------------------------------
 
 use 5.008;
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use Moose;
@@ -269,6 +269,12 @@ Required by AUTHOR.
 An arrayref of author names (with optional email address in C<< <> >>).
 Required by AUTHOR.
 
+=attr bugtracker
+
+An optional hashref giving the location of the distribution's public
+bugtracker.  If not specified, defaults to the CPAN RT.  If present,
+may have keys C<web> and C<mailto>.
+
 =attr repository
 
 An optional string giving the location of the distribution's public
@@ -294,6 +300,7 @@ And, if L</"repository"> is set:
 
 has qw(dist    is ro  isa Str);
 has qw(authors is ro  isa ArrayRef[Str]);
+has qw(bugtracker is ro  isa Maybe[HashRef]);
 has qw(repository is ro  isa Maybe[Str]);
 
 sub section_AUTHOR
@@ -314,13 +321,25 @@ sub section_AUTHOR
     }
   } # end foreach $authorCredit in @$authors
 
-  $pod .= <<"END AUTHOR";
+  my $bugs = $self->bugtracker || {
+    mailto => "bug-$dist\@rt.cpan.org",
+    web    => "http://rt.cpan.org/Public/Bug/Report.html?Queue=$dist",
+  };
 
-Please report any bugs or feature requests to
-S<C<< <bug-$dist AT rt.cpan.org> >>>,
-or through the web interface at
-L<http://rt.cpan.org/Public/Bug/Report.html?Queue=$dist>
-END AUTHOR
+  if (my $mailto = $bugs->{mailto} or $bugs->{web}) {
+    $pod .= "\nPlease report any bugs or feature requests\n";
+
+    if ($mailto) {
+      $mailto =~ s/@/ AT /g;
+      $pod .= "to S<C<< <$mailto> >>>";
+    }
+
+    if ($bugs->{web}) {
+      $pod .= "\nor " if $mailto;
+      $pod .= "through the web interface at\nL<< $bugs->{web} >>";
+    }
+    $pod .= ".\n";
+  } # end if bugtracker
 
   my $repo = $self->repository;
   if ($repo) {

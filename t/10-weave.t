@@ -34,7 +34,7 @@ if (@ARGV and $ARGV[0] eq 'gen') {
   open(OUT, '>:utf8', '/tmp/10-weave.t') or die $!;
   printf OUT "#%s\n\n__DATA__\n", '=' x 69;
 } else {
-  plan tests => 7 * 2;
+  plan tests => 11 * 2;
 }
 
 binmode DATA, ':utf8';
@@ -155,10 +155,10 @@ No bugs have been reported.
 
 E. Xavier Ample  S<C<< <example AT example.org> >>>
 
-Please report any bugs or feature requests to
-S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>,
+Please report any bugs or feature requests
+to S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>
 or through the web interface at
-L<http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar>
+L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
 
 =head1 COPYRIGHT AND LICENSE
 
@@ -216,10 +216,10 @@ Foo::Bar - boring description
 
 E. Xavier Ample  S<C<< <example AT example.org> >>>
 
-Please report any bugs or feature requests to
-S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>,
+Please report any bugs or feature requests
+to S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>
 or through the web interface at
-L<http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar>
+L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
 
 =cut
 ---EXPECTED---
@@ -258,10 +258,10 @@ Foo::Bar - boring description
 
 E. Xavier Ample  S<C<< <example AT example.org> >>>
 
-Please report any bugs or feature requests to
-S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>,
+Please report any bugs or feature requests
+to S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>
 or through the web interface at
-L<http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar>
+L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
 
 =cut
 ---EXPECTED---
@@ -308,10 +308,10 @@ This is ä déscription.
 
 E. Xävier Âmple  S<C<< <example AT example.org> >>>
 
-Please report any bugs or feature requests to
-S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>,
+Please report any bugs or feature requests
+to S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>
 or through the web interface at
-L<http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar>
+L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
 
 =cut
 ---EXPECTED---
@@ -360,10 +360,10 @@ This is ä déscription.
 
 E. Xävier Âmple  S<C<< <example AT example.org> >>>
 
-Please report any bugs or feature requests to
-S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>,
+Please report any bugs or feature requests
+to S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>
 or through the web interface at
-L<http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar>
+L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
 
 =cut
 ---EXPECTED---
@@ -415,10 +415,122 @@ This is ä déscription.
 
 E. Xävier Âmple  S<C<< <example AT example.org> >>>
 
-Please report any bugs or feature requests to
-S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>,
+Please report any bugs or feature requests
+to S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>
 or through the web interface at
-L<http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar>
+L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
+
+=cut
+---EXPECTED---
+
+## bugtracker web
+{
+  dist           => 'Foo-Bar',
+  authors        => ['E. Xavier Ample <example@example.org>'],
+  bugtracker     => { web => 'http://example.org' },
+}
+<<'---SOURCE---';
+=for Pod::Loom-omit
+BUGS AND LIMITATIONS
+CONFIGURATION AND ENVIRONMENT
+COPYRIGHT AND LICENSE
+DISCLAIMER OF WARRANTY
+INCOMPATIBILITIES
+NAME
+---SOURCE---
+<<'---EXPECTED---';
+__END__
+
+=head1 AUTHOR
+
+E. Xavier Ample  S<C<< <example AT example.org> >>>
+
+Please report any bugs or feature requests
+through the web interface at
+L<< http://example.org >>.
+
+=cut
+---EXPECTED---
+
+## bugtracker mailto
+{
+  dist           => 'Foo-Bar',
+  authors        => ['E. Xavier Ample <example@example.org>'],
+  bugtracker     => { mailto => 'bugs@example.org' },
+}
+<<'---SOURCE---';
+=for Pod::Loom-omit
+BUGS AND LIMITATIONS
+CONFIGURATION AND ENVIRONMENT
+COPYRIGHT AND LICENSE
+DISCLAIMER OF WARRANTY
+INCOMPATIBILITIES
+NAME
+---SOURCE---
+<<'---EXPECTED---';
+__END__
+
+=head1 AUTHOR
+
+E. Xavier Ample  S<C<< <example AT example.org> >>>
+
+Please report any bugs or feature requests
+to S<C<< <bugs AT example.org> >>>.
+
+=cut
+---EXPECTED---
+
+## bugtracker both
+{
+  dist           => 'Foo-Bar',
+  authors        => ['E. Xavier Ample <example@example.org>'],
+  bugtracker     => {mailto => 'bugs@example.org', web => 'http://example.org'},
+}
+<<'---SOURCE---';
+=for Pod::Loom-omit
+BUGS AND LIMITATIONS
+CONFIGURATION AND ENVIRONMENT
+COPYRIGHT AND LICENSE
+DISCLAIMER OF WARRANTY
+INCOMPATIBILITIES
+NAME
+---SOURCE---
+<<'---EXPECTED---';
+__END__
+
+=head1 AUTHOR
+
+E. Xavier Ample  S<C<< <example AT example.org> >>>
+
+Please report any bugs or feature requests
+to S<C<< <bugs AT example.org> >>>
+or through the web interface at
+L<< http://example.org >>.
+
+=cut
+---EXPECTED---
+
+## no bugtracker
+{
+  dist           => 'Foo-Bar',
+  authors        => ['E. Xavier Ample <example@example.org>'],
+  bugtracker     => {},
+}
+<<'---SOURCE---';
+=for Pod::Loom-omit
+BUGS AND LIMITATIONS
+CONFIGURATION AND ENVIRONMENT
+COPYRIGHT AND LICENSE
+DISCLAIMER OF WARRANTY
+INCOMPATIBILITIES
+NAME
+---SOURCE---
+<<'---EXPECTED---';
+__END__
+
+=head1 AUTHOR
+
+E. Xavier Ample  S<C<< <example AT example.org> >>>
 
 =cut
 ---EXPECTED---
