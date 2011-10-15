@@ -18,7 +18,7 @@ package Pod::Loom;
 #---------------------------------------------------------------------
 
 use 5.008;
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use Moose;

@@ -18,7 +18,7 @@ package Pod::Loom::Template;
 #---------------------------------------------------------------------
 
 use 5.008;
-our $VERSION = '0.03';
+our $VERSION = '0.05';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use Moose;
@@ -56,6 +56,11 @@ It is filled in by the L</"parse_pod"> method.
 has tmp_collected => (
   is       => 'rw',
   isa      => 'HashRef[ArrayRef]',
+);
+
+has tmp_encoding => (
+  is       => 'rw',
+  isa      => 'Maybe[Str]',
 );
 
 has tmp_groups => (
@@ -454,6 +459,7 @@ sub parse_pod
   my $pe = Pod::Loom::Parser->new( $self->collect_commands );
   $pe->read_string($$podRef);
   $self->tmp_collected( $pe->collected );
+  $self->tmp_encoding(  $pe->encoding  );
   $self->tmp_groups(    $pe->groups    );
 } # end parse_pod
 #---------------------------------------------------------------------
@@ -579,6 +585,13 @@ sub generate_pod
     # Make sure the document ends with a blank line:
     $pod =~ s/\n*\z/\n\n/ if $pod;
   } # end foreach $title in @$sectionList
+
+  my $encoding = $self->tmp_encoding;
+  if ($pod and defined $encoding) {
+    require Encode;
+
+    $pod = "=encoding $encoding\n\n" . Encode::encode($encoding, $pod);
+  }
 
   $pod;
 } # end generate_pod

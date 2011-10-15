@@ -18,7 +18,7 @@ package Pod::Loom::Parser;
 #---------------------------------------------------------------------
 
 use 5.008;
-our $VERSION = '0.03';
+our $VERSION = '0.05';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use strict;
@@ -59,6 +59,23 @@ sub new
 } # end new
 
 #---------------------------------------------------------------------
+sub _handle_encoding
+{
+  my ($self, $event) = @_;
+
+  my $encoding = $event->{content};
+
+  $encoding =~ s/^\s+//;
+  $encoding =~ s/\s+\z//;
+
+  if (defined $self->{encoding} and $encoding ne $self->{encoding}) {
+    die "Conflicting =encoding directive at line $event->{start_line}\n";
+  }
+
+  $self->{encoding} = $encoding;
+} # end _handle_encoding
+
+#---------------------------------------------------------------------
 sub handle_event
 {
   my ($self, $event) = @_;
@@ -68,6 +85,8 @@ sub handle_event
   if ($event->{type} eq 'command') {
     my $cmd = $event->{command};
     return if $cmd eq 'cut';
+
+    return $self->_handle_encoding($event) if $cmd eq 'encoding';
 
     # See if this changes the output location:
     my $collector = $self->{collect}{ $cmd };
@@ -98,7 +117,7 @@ sub handle_event
       push @$collector, '';
       $dest = $self->{dest} = \$collector->[-1];
     } else {
-      die "=$cmd used too soon\n" unless $dest;
+      die "=$cmd used too soon at line $event->{start_line}\n" unless $dest;
     }
 
     if ($cmd) {
@@ -119,7 +138,7 @@ sub handle_blank
     $event->{type} = 'text';
     $self->handle_event($event);
   }
-} # end handle_event
+} # end handle_blank
 #---------------------------------------------------------------------
 
 =method collected
@@ -141,7 +160,37 @@ will be collected under the format name.
 
 =cut
 
-sub collected { shift->{collect} }
+sub collected
+{
+  my ($self) = @_;
+
+  my $collected = $self->{collect};
+  my $encoding  = $self->{encoding};
+
+  if (defined $encoding and not $self->{collect_decoded}++) {
+    require Encode;
+    for my $array (values %$collected) {
+      for my $value (@$array) {
+        $value = Encode::decode($encoding, $value);
+      }
+    }
+  }
+
+  $collected;
+} # end collected
+
+#---------------------------------------------------------------------
+
+=method encoding
+
+  $encoding = $parser->encoding;
+
+This returns the name of the encoding that was used for the document,
+or C<undef> if no encoding was explicitly defined.
+
+=cut
+
+sub encoding { shift->{encoding} }
 #---------------------------------------------------------------------
 
 =method groups

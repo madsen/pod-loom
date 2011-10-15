@@ -11,6 +11,7 @@ lib/Pod/Loom/Role/Extender.pm
 lib/Pod/Loom/Template.pm
 lib/Pod/Loom/Template/Default.pm
 lib/Pod/Loom/Template/Identity.pm
-t/00.load.t
+t/00-load.t
+t/10-weave.t
 t/release-pod-coverage.t
 t/release-pod-syntax.t
