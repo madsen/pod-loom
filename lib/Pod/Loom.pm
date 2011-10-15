@@ -21,7 +21,7 @@ use 5.008;
 our $VERSION = '0.05';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
-use Moose;
+use Moose 0.65; # attr fulfills requires
 use Carp qw(croak);
 use PPI ();
 use String::RewritePrefix ();
@@ -57,7 +57,11 @@ has template => (
 This method does all the work (see L</"DESCRIPTION">).  You pass it a
 reference to a string containing Perl code mixed with POD.  (This
 string is not modified.)  It returns a new string containing the
-reformatted POD moved to the end of the code.
+reformatted POD moved to the end of the code.  C<$doc> should contain
+raw bytes (i.e. UTF8 flag off).  If C<$doc> is encoded in something
+other than Latin-1, it must contain an C<=encoding> directive
+specifying the encoding.  C<$new_doc> will likewise contain raw bytes
+in the same encoding as C<$doc>.
 
 The C<$filename> is used for error messages.  It does not need to
 actually exist on disk.

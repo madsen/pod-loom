@@ -24,6 +24,7 @@ our $VERSION = '0.05';
 use strict;
 use warnings;
 
+use Encode qw(find_encoding);
 use Pod::Eventual ();
 our @ISA = qw(Pod::Eventual);
 #---------------------------------------------------------------------
@@ -68,11 +69,15 @@ sub _handle_encoding
   $encoding =~ s/^\s+//;
   $encoding =~ s/\s+\z//;
 
-  if (defined $self->{encoding} and $encoding ne $self->{encoding}) {
+  my $e = find_encoding($encoding)
+      or die "Invalid =encoding $encoding at line $event->{start_line}\n";
+
+  if (defined $self->{encoding}) {
+    return if $e->name eq $self->{encoding}->name;
     die "Conflicting =encoding directive at line $event->{start_line}\n";
   }
 
-  $self->{encoding} = $encoding;
+  $self->{encoding} = $e;
 } # end _handle_encoding
 
 #---------------------------------------------------------------------
@@ -165,13 +170,12 @@ sub collected
   my ($self) = @_;
 
   my $collected = $self->{collect};
-  my $encoding  = $self->{encoding};
+  my $encoding  = $self->{encoding} ||= find_encoding('iso-8859-1');
 
-  if (defined $encoding and not $self->{collect_decoded}++) {
-    require Encode;
+  unless ($self->{collect_decoded}++) {
     for my $array (values %$collected) {
       for my $value (@$array) {
-        $value = Encode::decode($encoding, $value);
+        $value = $encoding->decode($value);
       }
     }
   }
@@ -185,12 +189,13 @@ sub collected
 
   $encoding = $parser->encoding;
 
-This returns the name of the encoding that was used for the document,
-or C<undef> if no encoding was explicitly defined.
+This returns the encoding that was used for the document as an
+L<Encode> object.  If no encoding was explicitly defined, then the
+default Latin-1 encoding is returned.
 
 =cut
 
-sub encoding { shift->{encoding} }
+sub encoding { shift->{encoding} ||= find_encoding('iso-8859-1') }
 #---------------------------------------------------------------------
 
 =method groups

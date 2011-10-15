@@ -34,7 +34,7 @@ if (@ARGV and $ARGV[0] eq 'gen') {
   open(OUT, '>:utf8', '/tmp/10-weave.t') or die $!;
   printf OUT "#%s\n\n__DATA__\n", '=' x 69;
 } else {
-  plan tests => 6 * 2;
+  plan tests => 7 * 2;
 }
 
 binmode DATA, ':utf8';
@@ -274,6 +274,58 @@ L<http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar>
   authors        => ["E. X\xE4vier \xC2mple <example\@example.org>"],
 }
 <<'---SOURCE---';
+=head1 SYNOPSIS
+
+  use Foo::Bar;
+
+=head1 DESCRIPTION
+
+This is ä déscription.
+
+=for Pod::Loom-omit
+BUGS AND LIMITATIONS
+CONFIGURATION AND ENVIRONMENT
+COPYRIGHT AND LICENSE
+DISCLAIMER OF WARRANTY
+INCOMPATIBILITIES
+---SOURCE---
+<<'---EXPECTED---';
+__END__
+
+=head1 NAME
+
+Foo::Bar - boring description
+
+=head1 SYNOPSIS
+
+  use Foo::Bar;
+
+=head1 DESCRIPTION
+
+This is ä déscription.
+
+=head1 AUTHOR
+
+E. Xävier Âmple  S<C<< <example AT example.org> >>>
+
+Please report any bugs or feature requests to
+S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>,
+or through the web interface at
+L<http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar>
+
+=cut
+---EXPECTED---
+
+## with =encoding Latin-1
+{
+  dist           => 'Foo-Bar',
+  module         => 'Foo::Bar',
+  abstract       => 'boring description',
+  authors        => ["E. X\xE4vier \xC2mple <example\@example.org>"],
+}
+<<'---SOURCE---';
+=encoding Latin-1
+
 =head1 SYNOPSIS
 
   use Foo::Bar;

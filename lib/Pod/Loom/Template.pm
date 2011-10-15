@@ -60,7 +60,7 @@ has tmp_collected => (
 
 has tmp_encoding => (
   is       => 'rw',
-  isa      => 'Maybe[Str]',
+  isa      => 'Object',
 );
 
 has tmp_groups => (
@@ -587,10 +587,11 @@ sub generate_pod
   } # end foreach $title in @$sectionList
 
   my $encoding = $self->tmp_encoding;
-  if ($pod and defined $encoding) {
-    require Encode;
-
-    $pod = "=encoding $encoding\n\n" . Encode::encode($encoding, $pod);
+  if (length $pod) {
+    $pod = $encoding->encode($pod);
+    my $name = $encoding->name;
+    $pod = "=encoding " . $encoding->encode($name) . "\n\n$pod"
+        unless $name eq 'iso-8859-1';
   }
 
   $pod;
