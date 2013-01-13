@@ -34,7 +34,7 @@ if (@ARGV and $ARGV[0] eq 'gen') {
   open(OUT, '>:utf8', '/tmp/10-weave.t') or die $!;
   printf OUT "#%s\n\n__DATA__\n", '=' x 69;
 } else {
-  plan tests => 11 * 2;
+  plan tests => 14 * 2;
 }
 
 binmode DATA, ':utf8';
@@ -95,7 +95,7 @@ while (<DATA>) {
 
   my $got = $enc->decode( $loom->weave(\$source, $name, $hash) );
 
-  $got =~ s/([ \t]*\n)+//;
+  $got =~ s/^(?:[ \t]*\n)+//;
   $got =~ s/\s+\z/\n/;
 
   # Either print the actual results, or compare to expected results:
@@ -119,7 +119,6 @@ __DATA__
 <<'---SOURCE---';
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
 ---EXPECTED---
 
 ## simplest default
@@ -133,8 +132,6 @@ __END__
 <<'---SOURCE---';
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =head1 NAME
 
 Foo::Bar - boring description
@@ -206,8 +203,6 @@ DISCLAIMER OF WARRANTY
 INCOMPATIBILITIES
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =head1 NAME
 
 Foo::Bar - boring description
@@ -244,8 +239,6 @@ DISCLAIMER OF WARRANTY
 INCOMPATIBILITIES
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =head1 NAME
 
 Foo::Bar - boring description
@@ -290,8 +283,6 @@ DISCLAIMER OF WARRANTY
 INCOMPATIBILITIES
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =head1 NAME
 
 Foo::Bar - boring description
@@ -342,8 +333,6 @@ DISCLAIMER OF WARRANTY
 INCOMPATIBILITIES
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =head1 NAME
 
 Foo::Bar - boring description
@@ -395,8 +384,6 @@ DISCLAIMER OF WARRANTY
 INCOMPATIBILITIES
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =encoding utf8
 
 =head1 NAME
@@ -439,8 +426,6 @@ INCOMPATIBILITIES
 NAME
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =head1 AUTHOR
 
 E. Xavier Ample  S<C<< <example AT example.org> >>>
@@ -468,8 +453,6 @@ INCOMPATIBILITIES
 NAME
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =head1 AUTHOR
 
 E. Xavier Ample  S<C<< <example AT example.org> >>>
@@ -496,8 +479,6 @@ INCOMPATIBILITIES
 NAME
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =head1 AUTHOR
 
 E. Xavier Ample  S<C<< <example AT example.org> >>>
@@ -526,13 +507,133 @@ INCOMPATIBILITIES
 NAME
 ---SOURCE---
 <<'---EXPECTED---';
-__END__
-
 =head1 AUTHOR
 
 E. Xavier Ample  S<C<< <example AT example.org> >>>
 
 =cut
+---EXPECTED---
+
+## use __END__ when file contains code
+{
+  dist           => 'Foo-Bar',
+  module         => 'Foo::Bar',
+  abstract       => 'boring description',
+  authors        => ['E. Xavier Ample <example@example.org>'],
+}
+<<'---SOURCE---';
+our $VERSION = '1.0';
+
+=for Pod::Loom-omit
+BUGS AND LIMITATIONS
+CONFIGURATION AND ENVIRONMENT
+COPYRIGHT AND LICENSE
+DISCLAIMER OF WARRANTY
+INCOMPATIBILITIES
+---SOURCE---
+<<'---EXPECTED---';
+our $VERSION = '1.0';
+
+__END__
+
+=head1 NAME
+
+Foo::Bar - boring description
+
+=head1 AUTHOR
+
+E. Xavier Ample  S<C<< <example AT example.org> >>>
+
+Please report any bugs or feature requests
+to S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>
+or through the web interface at
+L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
+
+=cut
+---EXPECTED---
+
+## other data after __END__
+{
+  dist           => 'Foo-Bar',
+  module         => 'Foo::Bar',
+  abstract       => 'boring description',
+  authors        => ['E. Xavier Ample <example@example.org>'],
+}
+<<'---SOURCE---';
+our $VERSION = '1.0';
+
+=for Pod::Loom-omit
+BUGS AND LIMITATIONS
+CONFIGURATION AND ENVIRONMENT
+COPYRIGHT AND LICENSE
+DISCLAIMER OF WARRANTY
+INCOMPATIBILITIES
+
+=cut
+
+__END__
+This is data.
+---SOURCE---
+<<'---EXPECTED---';
+our $VERSION = '1.0';
+
+=head1 NAME
+
+Foo::Bar - boring description
+
+=head1 AUTHOR
+
+E. Xavier Ample  S<C<< <example AT example.org> >>>
+
+Please report any bugs or feature requests
+to S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>
+or through the web interface at
+L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
+
+=cut
+
+__END__
+This is data.
+---EXPECTED---
+
+## other data after __DATA__
+{
+  dist           => 'Foo-Bar',
+  module         => 'Foo::Bar',
+  abstract       => 'boring description',
+  authors        => ['E. Xavier Ample <example@example.org>'],
+}
+<<'---SOURCE---';
+=for Pod::Loom-omit
+BUGS AND LIMITATIONS
+CONFIGURATION AND ENVIRONMENT
+COPYRIGHT AND LICENSE
+DISCLAIMER OF WARRANTY
+INCOMPATIBILITIES
+
+=cut
+
+__DATA__
+This is data.
+---SOURCE---
+<<'---EXPECTED---';
+=head1 NAME
+
+Foo::Bar - boring description
+
+=head1 AUTHOR
+
+E. Xavier Ample  S<C<< <example AT example.org> >>>
+
+Please report any bugs or feature requests
+to S<C<< <bug-Foo-Bar AT rt.cpan.org> >>>
+or through the web interface at
+L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
+
+=cut
+
+__DATA__
+This is data.
 ---EXPECTED---
 
 # Local Variables:

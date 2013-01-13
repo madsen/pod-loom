@@ -1,5 +1,8 @@
 Revision history for Pod-Loom
 
+0.06   NOT
+	- Don't insert __END__ if a file contains only POD
+
 0.05   October 15, 2011
 	- Handle =encoding directive
 	- Added bugtracker attribute to Template::Default

@@ -18,7 +18,7 @@ package Pod::Loom;
 #---------------------------------------------------------------------
 
 use 5.008;
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use Moose 0.65; # attr fulfills requires
@@ -152,6 +152,8 @@ Pod::Loom got an error when it tried to C<require> your template class.
 
   my $docstr = $ppi->serialize;
   $docstr =~ s/\n*\z/\n/;       # ensure it ends with one LF
+
+  return $newPod if $docstr eq "\n" and not defined $end; # Pure POD file
 
   return defined $end
       ? "$docstr\n$newPod\n$end"
