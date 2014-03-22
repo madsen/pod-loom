@@ -18,7 +18,7 @@ package Pod::Loom::Template;
 #---------------------------------------------------------------------
 
 use 5.008;
-our $VERSION = '0.05';
+our $VERSION = '0.07';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use Moose;
@@ -457,7 +457,12 @@ sub parse_pod
   my ($self, $podRef) = @_;
 
   my $pe = Pod::Loom::Parser->new( $self->collect_commands );
-  $pe->read_string($$podRef);
+  # We can't use read_string, because that treats the string as
+  # encoded in UTF-8, for which some byte sequences aren't valid.
+  # Pod::Loom::Parser will determine the actual encoding.
+  open my $handle, '<:encoding(iso-8859-1)', $podRef
+      or die "error opening string for reading: $!";
+  $pe->read_handle($handle);
   $self->tmp_collected( $pe->collected );
   $self->tmp_encoding(  $pe->encoding  );
   $self->tmp_groups(    $pe->groups    );

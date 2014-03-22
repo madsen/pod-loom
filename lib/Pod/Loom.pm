@@ -18,7 +18,7 @@ package Pod::Loom;
 #---------------------------------------------------------------------
 
 use 5.008;
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use Moose 0.65; # attr fulfills requires
@@ -164,7 +164,11 @@ Pod::Loom got an error when it tried to C<require> your template class.
 sub _has_pod_events
 {
   my $pe = Pod::Loom::_EventCounter->new;
-  $pe->read_string($_[1]);
+  # We can't use read_string, because that treats the string as
+  # encoded in UTF-8, for which some byte sequences aren't valid.
+  open my $handle, '<:encoding(iso-8859-1)', \$_[1]
+      or die "error opening string for reading: $!";
+  $pe->read_handle($handle);
 
   $pe->events;
 } # end _has_pod_events
