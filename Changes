@@ -1,5 +1,8 @@
 Revision history for Pod-Loom
 
+0.08   NOT
+	- Change 10-weave.t to work around bug in MetaCPAN indexer
+
 0.07   2014-03-22
 	- Make POD encoded in Latin-1 work with newer versions of
 	  Pod::Eventual, which treat strings as UTF-8 by default

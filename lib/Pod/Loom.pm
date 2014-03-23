@@ -18,7 +18,7 @@ package Pod::Loom;
 #---------------------------------------------------------------------
 
 use 5.008;
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 # This file is part of {{$dist}} {{$dist_version}} ({{$date}})
 
 use Moose 0.65; # attr fulfills requires

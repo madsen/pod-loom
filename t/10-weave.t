@@ -62,6 +62,9 @@ while (<DATA>) {
   while (<DATA>) {
     print OUT $_ if $generateResults;
     last if $_ eq "---SOURCE---\n";
+    # Having multiple lines matching ^=encoding confuses the MetaCPAN indexer.
+    # So, I use ~encoding instead and convert it during I/O.
+    s/^~encoding/=encoding/;
     $source .= $_;
   }
 
@@ -73,6 +76,7 @@ while (<DATA>) {
   my $expected = '';
   while (<DATA>) {
     last if $_ eq "---EXPECTED---\n";
+    s/^~encoding/=encoding/;
     $expected .= $_;
   }
 
@@ -100,6 +104,7 @@ while (<DATA>) {
 
   # Either print the actual results, or compare to expected results:
   if ($generateResults) {
+    $got =~ s/^=encoding/~encoding/mg;
     print OUT "<<'---EXPECTED---';\n$got---EXPECTED---\n";
   } else {
     eq_or_diff($got, $expected, "$name output");
@@ -315,7 +320,7 @@ L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
   authors        => ["E. X\xE4vier \xC2mple <example\@example.org>"],
 }
 <<'---SOURCE---';
-=encoding Latin-1
+~encoding Latin-1
 
 =head1 SYNOPSIS
 
@@ -366,7 +371,7 @@ L<< http://rt.cpan.org/Public/Bug/Report.html?Queue=Foo-Bar >>.
   authors        => ["E. X\xE4vier \xC2mple <example\@example.org>"],
 }
 <<'---SOURCE---';
-=encoding utf8
+~encoding utf8
 
 =head1 DESCRIPTION
 
@@ -384,7 +389,7 @@ DISCLAIMER OF WARRANTY
 INCOMPATIBILITIES
 ---SOURCE---
 <<'---EXPECTED---';
-=encoding utf8
+~encoding utf8
 
 =head1 NAME
 
